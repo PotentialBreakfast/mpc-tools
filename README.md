@@ -108,7 +108,7 @@ Afterwards, `ssh root@<your-mpc-address>` should log straight in, and MPC TOOLS 
 
 All welcome, and short messages are great. [💡 Suggest an idea](../../issues/new?template=idea.yml) · [🐛 Report a bug](../../issues/new?template=bug.yml). See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-More from me: **[Potential Plugins](https://github.com/PotentialBreakfast/potential-plugins)**, free plugins for the MPC (PotentialBreaks, PotentialPatina…).
+More from me, free plugins for the MPC: **[PotentialBreaks](https://github.com/PotentialBreakfast/mpc-vst-potentialbreaks)** (drum-break slicer) and **[PotentialPatina](https://github.com/PotentialBreakfast/mpc-vst-potentialpatina)** (retro-colour effect).
 
 ## How releases are made
 
