@@ -1,0 +1,36 @@
+name: 🐛 Bug
+description: Something doesn't work, won't connect, or looks broken
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time! Short answers are fine – you don't need to be technical.
+  - type: dropdown
+    id: tab
+    attributes:
+      label: Which part?
+      options: [Remote, OBS, File Browser, PC Folders, Save last 60 s, First run / connecting, Something else]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: MPC TOOLS version
+      description: In the file name, e.g. 1.2.0. "Don't know" is fine.
+  - type: input
+    id: mpc
+    attributes:
+      label: Your MPC and its firmware
+      placeholder: e.g. MPC One, HAKAI 3.10
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what happened instead. The message in the tab (or a screenshot) helps a lot.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "**Privacy:** please don't paste your MPC's address, passwords, SSH keys or serial numbers. I never need them."

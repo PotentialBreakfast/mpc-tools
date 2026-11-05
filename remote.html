@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MPC Remote Plus</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<style>
+  :root { --bg:#141518; --panel:#1e2024; --line:#2c2f35; --text:#e6e6e6; --dim:#8a8f98; --amber:#f2a33a; --red:#e5484d; --green:#3fb950; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui, "Segoe UI", sans-serif;
+         display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px; min-height:100vh; }
+  h1 { margin:0; font-size:15px; font-weight:600; letter-spacing:.08em; color:var(--dim); text-transform:uppercase; }
+  #screenBox { position:relative; background:#000; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+               max-width:min(100%, 1000px); line-height:0; }
+  #screen { display:block; max-width:100%; height:auto; cursor:pointer; user-select:none; -webkit-user-drag:none; }
+  #noScreen { display:none; padding:40px 30px; line-height:1.5; color:var(--dim); text-align:center; }
+  .bar { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px;
+           min-width:120px; height:84px; font:600 17px system-ui, "Segoe UI", sans-serif; cursor:pointer;
+           display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+  button:hover { border-color:#4a4e57; }
+  button:active { transform:translateY(1px); background:#26292e; }
+  button .ic { font-size:28px; line-height:1; }
+  #play .ic { color:var(--green); } #rec .ic { color:var(--red); } #stop .ic { color:var(--text); } #start .ic { color:var(--amber); }
+  #play.on { border-color:var(--green); box-shadow:0 0 0 2px var(--green) inset; background:#17301f; }
+  #stop.on { border-color:#6b707a; }
+  #live { font-size:12px; color:var(--dim); }
+  #live.ok { color:var(--green); }
+  button.flash { border-color:var(--amber); box-shadow:0 0 0 2px var(--amber) inset; }
+  #status { min-height:22px; color:var(--dim); font-size:14px; }
+  #status.bad { color:var(--red); }
+  body.embedded h1 { display:none; }
+  body.embedded #screen { max-height:calc(100vh - 250px); width:auto; }
+  .hint { color:var(--dim); font-size:13px; text-align:center; max-width:640px; }
+  kbd { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:0 5px; font-size:12px; }
+</style>
+</head>
+<body>
+  <h1>MPC Remote Plus</h1>
+
+  <div id="screenBox">
+    <img id="screen" alt="MPC screen" draggable="false">
+    <div id="noScreen">Can't see the MPC screen.<br>Is the MPC switched on and on the network? Press F5 here to retry.</div>
+  </div>
+
+  <div class="bar">
+    <button id="start" data-mmc="locate_start" title="Back to the start (Home)"><span class="ic">⏮</span>Start</button>
+    <button id="play"  data-mmc="play"         title="Play (Space toggles Play/Stop)"><span class="ic">▶</span>Play</button>
+    <button id="stop"  data-mmc="stop"         title="Stop"><span class="ic">■</span>Stop</button>
+    <button id="rec"   data-mmc="record_strobe" title="Record (R)"><span class="ic">●</span>Rec</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="live"></div>
+  <div class="hint">Tap the screen picture to touch the MPC screen. Play lights up when the MPC is playing, from here or from its own buttons. Keys: <kbd>Space</kbd> play/stop · <kbd>Home</kbd> start · <kbd>R</kbd> record.<br>
+  MPC settings (Preferences → MIDI / Sync): input <b>MPC Remote Out</b> on (Global), <b>Receive MMC</b> on; output <b>MPC Remote In</b> on, Sync send <b>MIDI Clock</b>.</div>
+
+<script>
+  if (window.top !== window) document.body.classList.add('embedded');
+  var BASE = 'http://localhost:6720';
+  // Opened through the helper (http://localhost:6721) the page can read the MPC's replies and follow its transport.
+  // Opened straight from the file it can only send.
+  var VIA_HELPER = location.protocol === 'http:';
+  var MCP = VIA_HELPER ? '/mcp' : BASE + '/mcp';
+  var statusEl = document.getElementById('status'), liveEl = document.getElementById('live');
+  var playing = false, statusTimer;
+
+  function say(msg, bad) {
+    statusEl.textContent = msg;
+    statusEl.className = bad ? 'bad' : '';
+    clearTimeout(statusTimer);
+    if (!bad) statusTimer = setTimeout(function () { statusEl.textContent = ''; }, 2500);
+  }
+
+  function call(tool, args) {
+    var body = JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: 'tools/call', params: { name: tool, arguments: args } });
+    if (VIA_HELPER)
+      return fetch(MCP, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+        .then(function (r) { if (!r.ok) throw new Error('helper ' + r.status); return r.json(); })
+        .then(function (j) { return j && j.result && j.result.content && j.result.content[0] ? j.result.content[0].text : ''; });
+    // text/plain + no-cors: a simple request the addin accepts from a local file; the reply can't be read.
+    return fetch(MCP, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: body })
+      .then(function () { return ''; });
+  }
+
+  // Send an MMC transport command into MPC (needs Receive MMC on in the MPC).
+  function mmc(cmd, label) {
+    return call('send_midi', { type: 'mmc', mmc: cmd })
+      .then(function () { say('Sent ' + label); })
+      .catch(function () { say("Can't reach the MPC. Is it switched on and on the network?", true); });
+  }
+
+  function showState(p) {
+    playing = p;
+    document.getElementById('play').classList.toggle('on', p);
+    document.getElementById('stop').classList.toggle('on', !p);
+  }
+
+  // Follow the MPC's own transport: it sends MIDI clock ticks while playing, plus start/continue/stop,
+  // to the addin's "MPC Remote In" port (MPC: MIDI output MPC Remote In on, Sync send = MIDI Clock).
+  var quiet = 0, failures = 0;
+  function poll() {
+    call('midi_listen', { duration_ms: 300 }).then(function (t) {
+      failures = 0;
+      liveEl.textContent = 'Following the MPC transport'; liveEl.className = 'ok';
+      var ticks = /and (\d+) MIDI clock ticks/.exec(t);
+      var started = /\b(start|continue)\b/.test(t), stopped = /\bstop\b/.test(t);
+      if (stopped && !started) { quiet = 0; showState(false); }
+      else if (ticks || started) { quiet = 0; showState(true); }
+      else if (++quiet >= 2 && playing) showState(false);   // no clock for 0.6 s: stopped
+      setTimeout(poll, 50);
+    }).catch(function () {
+      failures++;
+      liveEl.textContent = "Not following the MPC transport (can't reach the MPC)"; liveEl.className = '';
+      setTimeout(poll, failures > 3 ? 3000 : 1000);
+    });
+  }
+  if (VIA_HELPER) poll();
+  else liveEl.textContent = '';
+
+  function press(btn) {
+    btn.classList.add('flash');
+    setTimeout(function () { btn.classList.remove('flash'); }, 180);
+    var cmd = btn.getAttribute('data-mmc');
+    if (cmd === 'play') showState(true);
+    if (cmd === 'stop') showState(false);
+    mmc(cmd, btn.lastChild.textContent.trim());
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('button[data-mmc]'), function (b) {
+    b.addEventListener('click', function () { press(b); });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.repeat) return;
+    if (e.code === 'Space') { e.preventDefault(); press(document.getElementById(playing ? 'stop' : 'play')); }
+    else if (e.code === 'Home') { e.preventDefault(); press(document.getElementById('start')); }
+    else if (e.key === 'r' || e.key === 'R') { press(document.getElementById('rec')); }
+  });
+
+  // Live screen + tap-to-touch (coordinates in full-size screen pixels).
+  var img = document.getElementById('screen'), noScreen = document.getElementById('noScreen');
+  img.onerror = function () { img.style.display = 'none'; noScreen.style.display = 'block'; };
+  img.onload = function () { img.style.display = 'block'; noScreen.style.display = 'none'; };
+  img.src = BASE + '/stream';
+
+  img.addEventListener('click', function (e) {
+    var r = img.getBoundingClientRect();
+    if (!img.naturalWidth || !r.width) return;
+    var x = Math.round((e.clientX - r.left) * img.naturalWidth / r.width);
+    var y = Math.round((e.clientY - r.top) * img.naturalHeight / r.height);
+    fetch(BASE + '/tap?x=' + x + '&y=' + y, { mode: 'no-cors' })
+      .catch(function () { say("Can't reach the MPC. Is it switched on?", true); });
+  });
+</script>
+</body>
+</html>

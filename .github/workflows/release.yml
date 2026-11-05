@@ -1,0 +1,55 @@
+# Builds MPC TOOLS for Windows from this source and publishes it as a GitHub release.
+# To release: set appVersion in main.go, add .github/release-notes/v<version>.md, push to main.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/release-notes/**', '.github/workflows/release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Which version?
+        id: v
+        run: |
+          V=$(grep -oP 'const appVersion = "\K[0-9.]+' main.go)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          [ -f ".github/release-notes/v$V.md" ] || { echo "no release notes for v$V"; exit 1; }
+      - name: Already released?
+        id: done
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.v.outputs.version }}" >/dev/null 2>&1; then echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Test and build
+        if: steps.done.outputs.skip != '1'
+        env:
+          GOTOOLCHAIN: local
+          GOFLAGS: -mod=mod
+          GOPROXY: direct
+          GOSUMDB: 'off'
+        run: |
+          go vet ./...
+          GOOS=windows GOARCH=amd64 go vet ./...
+          mkdir -p dist
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-H=windowsgui -s -w" \
+            -o "dist/MPC-TOOLS-${{ steps.v.outputs.version }}-windows-x64.exe" .
+          cd dist && sha256sum *.exe | tee SHA256SUMS
+      - name: Publish
+        if: steps.done.outputs.skip != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=${{ steps.v.outputs.version }}
+          gh release create "v$V" dist/*.exe dist/SHA256SUMS --target "${{ github.sha }}" \
+            --title "MPC TOOLS $V" --notes-file ".github/release-notes/v$V.md"

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MPC screen (for OBS)</title>
+<style>
+  html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+  img { width:100%; height:100%; object-fit:contain; display:block; image-rendering:auto; }
+  #wait { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#555;
+          font:600 20px system-ui, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+<img id="s" alt="">
+<div id="wait">Waiting for the MPC screen…</div>
+<script>
+  // The MPC screen only, nothing else: add http://localhost:6721/obs to OBS as a Browser Source (1280 x 800).
+  // ?fps=N sets the frame rate (default 30), ?half=1 halves the resolution for a slow network.
+  var q = new URLSearchParams(location.search), img = document.getElementById('s'), wait = document.getElementById('wait');
+  var src = '/obs/stream?fps=' + (q.get('fps') || 30) + (q.get('half') ? '&half=1' : '');
+  function start() { img.src = src + '&t=' + Date.now(); }
+  img.onload = function () { wait.style.display = 'none'; };
+  img.onerror = function () { wait.style.display = 'flex'; setTimeout(start, 2000); };
+  start();
+  setInterval(function () { if (!img.naturalWidth) start(); }, 5000);
+</script>
+</body>
+</html>

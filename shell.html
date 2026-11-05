@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MPC TOOLS</title>
+<link rel="icon" type="image/png" href="/icon.png">
+<style>
+  :root { --bg:#141518; --bar:#1b1c20; --panel:#1e2024; --line:#2c2f35; --text:#e6e6e6; --dim:#8a8f98;
+          --red:#ff4a3d; --amber:#ffa62b; --green:#3fb950; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; margin:0; }
+  body { background:var(--bg); color:var(--text); font:15px/1.4 system-ui, "Segoe UI", sans-serif;
+         display:flex; flex-direction:column; }
+  header { display:flex; align-items:stretch; gap:8px; padding:10px 12px 0; background:var(--bar);
+           border-bottom:1px solid var(--line); }
+  .brand { display:flex; align-items:center; gap:10px; margin-right:14px; padding-bottom:10px;
+           font-weight:700; letter-spacing:.14em; font-size:14px; color:#cfd2d8; }
+  .brand img { width:28px; height:28px; }
+  .tab { display:flex; align-items:center; gap:10px; padding:0 22px; height:52px; border:1px solid transparent;
+         border-bottom:none; border-radius:10px 10px 0 0; background:transparent; color:var(--dim);
+         font:600 16px system-ui, "Segoe UI", sans-serif; cursor:pointer; position:relative; top:1px; }
+  .tab:hover { color:var(--text); }
+  .tab.active { background:var(--bg); color:var(--text); border-color:var(--line); }
+  .pad { width:14px; height:14px; border-radius:4px; }
+  .tab[data-t=remote] .pad { background:var(--red); box-shadow:0 0 8px rgba(255,74,61,.7); }
+  .tab[data-t=files] .pad { background:var(--amber); box-shadow:0 0 8px rgba(255,166,43,.7); }
+  .tab[data-t=link] .pad { background:#3da8ff; box-shadow:0 0 8px rgba(61,168,255,.7); }
+  .dot.setup, .dot.off, .dot.external { background:#777; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#555; }
+  .dot.ok { background:var(--green); } .dot.connecting { background:var(--amber); animation:blink 1s infinite; }
+  .dot.error { background:var(--red); }
+  @keyframes blink { 50% { opacity:.3; } }
+  .key { font-size:11px; color:#666b74; font-weight:500; }
+  .spacer { flex:1; }
+  #skip { align-self:center; margin:0 4px 10px 0; display:flex; align-items:center; gap:10px; height:44px; padding:0 18px;
+          background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:10px; cursor:pointer;
+          font:600 15px system-ui, "Segoe UI", sans-serif; }
+  #skip:hover { border-color:#4a4e57; }
+  #skip .rec { width:14px; height:14px; border-radius:50%; background:var(--red); box-shadow:0 0 8px rgba(255,74,61,.8); }
+  #skip.saving .rec { animation:blink .5s infinite; }
+  #skip.ok { border-color:var(--green); } #skip.err { border-color:var(--red); }
+  #skipmsg { align-self:center; margin:0 10px 10px 0; font-size:13px; color:var(--dim); max-width:360px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #skipmsg.ok { color:var(--green); } #skipmsg.err { color:var(--red); }
+  main { flex:1; position:relative; }
+  .view { position:absolute; inset:0; display:none; }
+  .view.active { display:block; }
+  iframe { width:100%; height:100%; border:0; display:block; background:var(--bg); }
+  .msg { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         gap:16px; text-align:center; padding:30px; color:var(--dim); }
+  .msg h2 { margin:0; color:var(--text); font-size:20px; font-weight:600; }
+  .msg pre { max-width:720px; white-space:pre-wrap; text-align:left; background:var(--panel); border:1px solid var(--line);
+             border-radius:8px; padding:12px; font-size:12px; color:#b9bdc5; }
+  .msg button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px;
+                padding:0 34px; height:64px; font:600 17px system-ui, "Segoe UI", sans-serif; cursor:pointer; }
+  .msg button:hover { border-color:#4a4e57; }
+  .hint { font-size:13px; }
+  .hbtn { align-self:center; margin:0 4px 10px 0; height:44px; padding:0 14px; background:var(--panel); color:var(--text);
+          border:1px solid var(--line); border-radius:10px; cursor:pointer; font:600 14px system-ui, "Segoe UI", sans-serif; }
+  .hbtn:hover { border-color:#4a4e57; }
+  #overlay { position:fixed; inset:0; background:rgba(10,11,13,.92); display:none; align-items:center; justify-content:center; z-index:10; }
+  #overlay.show { display:flex; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:28px 32px; width:min(620px, 92vw); }
+  .card h2 { margin:0 0 6px; font-size:22px; } .card p { color:var(--dim); margin:6px 0 16px; }
+  .big { width:100%; height:64px; margin:8px 0; background:#2a2e34; color:var(--text); border:1px solid var(--line); border-radius:12px;
+         font:600 18px system-ui, "Segoe UI", sans-serif; cursor:pointer; text-align:left; padding:0 20px; }
+  .big:hover { border-color:var(--amber); } .big.primary { background:#3a2c0f; border-color:#a86f1a; text-align:center; }
+  .row { display:flex; gap:10px; margin-top:12px; }
+  .row input { flex:1; height:52px; background:#121316; color:var(--text); border:1px solid var(--line); border-radius:10px;
+               padding:0 14px; font:500 18px system-ui, "Segoe UI", sans-serif; }
+  .row button { height:52px; padding:0 22px; background:#2a2e34; color:var(--text); border:1px solid var(--line); border-radius:10px;
+                font:600 16px system-ui, "Segoe UI", sans-serif; cursor:pointer; }
+  .small { font-size:13px; color:var(--dim); margin-top:14px; }
+  .obsurl { font:600 18px ui-monospace, Consolas, monospace; background:#121316; padding:12px 14px; border-radius:10px;
+            border:1px solid var(--line); user-select:all; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img src="/icon.png" alt="">MPC TOOLS</div>
+  <button class="tab active" data-t="remote"><span class="pad"></span>Remote<span class="dot" id="dot-remote"></span><span class="key">Ctrl+1</span></button>
+  <button class="tab" data-t="files"><span class="pad"></span>File Browser<span class="dot" id="dot-files"></span><span class="key">Ctrl+2</span></button>
+  <button class="tab" data-t="link" title="Your PC's folders in the MPC's own browser (MPC Link)"><span class="pad"></span>PC Folders<span class="dot" id="dot-link"></span><span class="key">Ctrl+3</span></button>
+  <div class="spacer"></div>
+  <button class="hbtn" id="obsbtn" title="Show the MPC screen in OBS">OBS</button>
+  <button class="hbtn" id="setbtn" title="Change which MPC to connect to">⚙</button>
+  <div id="skipmsg"></div>
+  <button id="skip" title="Save the last 60 seconds of the MPC's main output as a WAV (Ctrl+S)"><span class="rec"></span>Save last 60 s</button>
+</header>
+<div id="overlay"><div class="card" id="card"></div></div>
+<main>
+  <section class="view active" id="view-remote">
+    <iframe id="frame-remote" title="MPC Remote" hidden></iframe>
+    <div class="msg" id="msg-remote"></div>
+  </section>
+  <section class="view" id="view-files">
+    <iframe id="frame-files" title="MPC File Browser" hidden></iframe>
+    <div class="msg" id="msg-files"></div>
+  </section>
+  <section class="view" id="view-link">
+    <iframe id="frame-link" title="MPC Link" hidden></iframe>
+    <div class="msg" id="msg-link"></div>
+  </section>
+</main>
+<script>
+  var NAMES = { remote: 'MPC Remote', files: 'File Browser', link: 'PC Folders (MPC Link)' };
+  var loaded = { remote: false, files: false, link: false };
+
+  function show(t) {
+    document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('active', b.dataset.t === t); });
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + t); });
+    var f = document.getElementById('frame-' + t);
+    if (!f.hidden) try { f.focus(); } catch (e) {}
+    try { localStorage.setItem('mpctools-tab', t); } catch (e) {}
+  }
+  document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.t); }); });
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && e.key === '1') { e.preventDefault(); show('remote'); }
+    if (e.ctrlKey && e.key === '2') { e.preventDefault(); show('files'); }
+    if (e.ctrlKey && e.key === '3') { e.preventDefault(); show('link'); }
+  });
+  try { var last = localStorage.getItem('mpctools-tab'); if (last === 'files' || last === 'link') show(last); } catch (e) {}
+
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+
+  function render(t, st) {
+    document.getElementById('dot-' + t).className = 'dot ' + st.state;
+    var frame = document.getElementById('frame-' + t), msg = document.getElementById('msg-' + t);
+    if (t === 'link') {
+      var tab = document.querySelector('.tab[data-t=link]');
+      tab.title = st.state === 'ok' ? 'On the MPC: ' + (st.mount || '').replace('/media/', '').split('/').join(' / ') :
+        "Your PC's folders in the MPC's own browser (MPC Link)";
+    }
+    if (st.url && t === 'link') { // MPC Link's own settings page shows its status, so show it in every state
+      if (!loaded[t]) { frame.src = st.url; loaded[t] = true; }
+      frame.hidden = false; msg.style.display = 'none';
+      return;
+    }
+    if (st.state === 'ok') {
+      if (!loaded[t]) { frame.src = st.url; loaded[t] = true; }
+      frame.hidden = false; msg.style.display = 'none';
+      return;
+    }
+    frame.hidden = true; msg.style.display = 'flex';
+    if (loaded[t]) { frame.src = 'about:blank'; loaded[t] = false; }
+    if (st.state === 'setup') {
+      msg.innerHTML = '<h2>Set up your MPC first</h2><button>Find my MPC</button>';
+      msg.querySelector('button').onclick = function () { setupScreen(true); };
+      return;
+    }
+    if (st.state === 'connecting') {
+      msg.innerHTML = '<h2>Connecting to ' + NAMES[t] + '…</h2><div class="hint">This can take a few seconds.</div>';
+    } else {
+      msg.innerHTML = '<h2>' + NAMES[t] + (st.state === 'external' ? ' is running separately' : " isn't connected") + '</h2>' +
+        (st.msg ? '<pre>' + esc(st.msg) + '</pre>' : '') +
+        '<button data-retry="' + t + '">Try again</button>' +
+        '<div class="hint">Check the MPC is switched on, on the network, and the MPC app has finished starting.</div>';
+      msg.querySelector('button').onclick = function () {
+        fetch('/retry?t=' + t, { method: 'POST' }).then(poll);
+      };
+    }
+  }
+
+  // One-tap Skipback save
+  var skipBtn = document.getElementById('skip'), skipMsg = document.getElementById('skipmsg'), skipTimer;
+  function skipSay(text, cls) {
+    skipMsg.textContent = text; skipMsg.className = cls || ''; skipBtn.className = cls === 'err' ? 'err' : cls === 'ok' ? 'ok' : '';
+    clearTimeout(skipTimer);
+    if (cls) skipTimer = setTimeout(function () { skipMsg.textContent = ''; skipMsg.className = ''; skipBtn.className = ''; }, 12000);
+  }
+  function skipSave() {
+    if (skipBtn.classList.contains('saving')) return;
+    skipBtn.className = 'saving'; skipMsg.className = ''; skipMsg.textContent = 'Saving…';
+    fetch('/skipback', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.state === 'ok') { var name = j.msg.split('/').pop(); skipSay('Saved ' + name, 'ok'); skipMsg.title = j.msg; }
+      else if (j.state === 'busy') { skipBtn.className = 'saving'; }
+      else skipSay(j.msg, 'err');
+    }).catch(function () { skipSay("Couldn't reach the app.", 'err'); });
+  }
+  skipBtn.addEventListener('click', skipSave);
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); skipSave(); }
+  });
+
+  // ---- first run: which MPC? ----
+  var overlay = document.getElementById('overlay'), card = document.getElementById('card'), curHost = '';
+  function closeOverlay() { overlay.classList.remove('show'); }
+  function setupScreen(first) {
+    card.innerHTML = '<h2>' + (first ? 'Welcome to MPC TOOLS' : 'Which MPC?') + '</h2>' +
+      '<p>' + (first ? "First, let's find your MPC. Make sure it's switched on and on the same network as this computer." :
+                       'Connected to <b>' + esc(curHost) + '</b>. Pick another MPC or type its address.') + '</p>' +
+      '<button class="big primary" id="find">Find my MPC</button><div id="found"></div>' +
+      '<div class="row"><input id="addr" placeholder="or type its address, e.g. 192.168.1.50" value="' + esc(curHost) + '">' +
+      '<button id="use">Use</button></div>' +
+      '<div class="small">The address is shown in the MPC\'s Wi-Fi / network settings. It is saved on this computer only.</div>' +
+      (first ? '' : '<div class="row"><button id="cancel">Close</button></div>');
+    overlay.classList.add('show');
+    document.getElementById('find').onclick = findMPC;
+    document.getElementById('use').onclick = function () { useHost(document.getElementById('addr').value); };
+    var c = document.getElementById('cancel'); if (c) c.onclick = closeOverlay;
+    if (first) findMPC();
+  }
+  function findMPC() {
+    var f = document.getElementById('found'), b = document.getElementById('find');
+    b.disabled = true; b.textContent = 'Looking on your network…'; f.innerHTML = '';
+    fetch('/api/discover').then(function (r) { return r.json(); }).then(function (list) {
+      b.disabled = false; b.textContent = 'Look again';
+      if (!list || !list.length) { f.innerHTML = '<p>No MPC found. Is it switched on, on the same network, with SSH turned on? You can also type its address below.</p>'; return; }
+      list.forEach(function (m) {
+        var x = document.createElement('button'); x.className = 'big';
+        x.textContent = (m.name || 'MPC') + '  ·  ' + m.host; x.onclick = function () { useHost(m.host); }; f.appendChild(x);
+      });
+    }).catch(function () { b.disabled = false; b.textContent = 'Look again'; });
+  }
+  function useHost(h) {
+    h = (h || '').trim(); if (!h) return;
+    fetch('/api/sethost?host=' + encodeURIComponent(h), { method: 'POST' }).then(function (r) {
+      if (r.ok) { curHost = h; closeOverlay(); lastJSON = ''; poll(); }
+      else r.text().then(function (t) { alert(t); });
+    });
+  }
+  document.getElementById('setbtn').onclick = function () { setupScreen(false); };
+  document.getElementById('obsbtn').onclick = function () {
+    var u = location.origin + '/obs';
+    card.innerHTML = '<h2>MPC screen in OBS</h2><p>In OBS: <b>Sources → + → Browser</b>, paste this address, and set the size to <b>1280 × 800</b>. ' +
+      'It shows just the MPC screen, live, with nothing else. Keep MPC TOOLS open while streaming.</p>' +
+      '<div class="obsurl" id="ou">' + u + '</div>' +
+      '<div class="row"><button id="copy">Copy address</button><button id="open">Preview</button><button id="cancel">Close</button></div>' +
+      '<div class="small">Slow Wi-Fi? Add <b>?half=1</b> to the address. Smoother: <b>?fps=60</b>.</div>';
+    overlay.classList.add('show');
+    document.getElementById('copy').onclick = function () { navigator.clipboard.writeText(u).then(function () { document.getElementById('copy').textContent = 'Copied ✓'; }); };
+    document.getElementById('open').onclick = function () { window.open(u, '_blank', 'width=1280,height=800'); };
+    document.getElementById('cancel').onclick = closeOverlay;
+  };
+
+  var lastJSON = '';
+  function poll() {
+    return fetch('/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
+      var j = JSON.stringify(s);
+      if (s.host === '' && !overlay.classList.contains('show')) setupScreen(true);
+      curHost = s.host || '';
+      if (j !== lastJSON) { lastJSON = j; render('remote', s.remote); render('files', s.files); if (s.link) render('link', s.link); }
+    }).catch(function () {});
+  }
+  poll();
+  setInterval(poll, 1500);
+</script>
+</body>
+</html>

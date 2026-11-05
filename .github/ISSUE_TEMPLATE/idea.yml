@@ -1,0 +1,14 @@
+name: 💡 Idea or request
+description: A new feature, a change, or something you'd like MPC TOOLS to do
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: Ideas of every size are welcome – "it'd be nice if…" is a great start. Criticism too.
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What would you like, and how would it help your sessions?
+    validations:
+      required: true
