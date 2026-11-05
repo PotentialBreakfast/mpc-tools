@@ -5,6 +5,8 @@
 package main
 
 import (
+	"errors"
+	"os"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -114,14 +116,25 @@ func (a *LinkApp) serve(ln net.Listener) error {
 		a.restart()
 		return a.state(), err
 	})
-	api("/api/folders/add", func(*http.Request) (any, error) {
-		p, err := pick.Folder("Choose a folder to show on the MPC")
-		if err == pick.ErrCancelled {
-			return a.state(), nil
+	// MPC TOOLS: the page's own folder picker sends the chosen folder as ?path=; without it, the system chooser.
+	api("/api/folders/add", func(r *http.Request) (any, error) {
+		p := r.URL.Query().Get("path")
+		if p != "" {
+			if st, err := os.Stat(p); err != nil || !st.IsDir() {
+				return nil, errors.New("that folder can't be opened")
+			}
+			p = filepath.Clean(p)
+		} else {
+			var err error
+			p, err = pick.Folder("Choose a folder to show on the MPC")
+			if err == pick.ErrCancelled {
+				return a.state(), nil
+			}
+			if err != nil {
+				return nil, err
+			}
 		}
-		if err != nil {
-			return nil, err
-		}
+		var err error
 		a.mu.Lock()
 		name := uniqueName(a.cfg.Folders, config.SafeName(filepath.Base(p)))
 		a.cfg.Folders = append(a.cfg.Folders, config.Folder{Name: name, Path: p})
@@ -130,6 +143,7 @@ func (a *LinkApp) serve(ln net.Listener) error {
 		a.restart()
 		return a.state(), err
 	})
+	api("/api/fs/list", func(r *http.Request) (any, error) { return listFolders(r.URL.Query().Get("dir")) })
 	api("/api/folders/remove", func(r *http.Request) (any, error) {
 		i, _ := strconv.Atoi(r.URL.Query().Get("i"))
 		a.mu.Lock()

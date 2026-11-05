@@ -61,7 +61,7 @@ MPC TOOLS is a dashboard: it connects to small helper programs ("addins") that r
 
 ### PC Folders (MPC Link)
 
-Open the **PC Folders** tab, click **Add folder…** and pick a folder on your PC. It then shows up in the MPC's own browser, on the SD card or USB drive, in a folder with your PC's name. It connects whenever MPC TOOLS is open, and is removed from the MPC when you close it.
+Open the **PC Folders** tab, click **Add folder…** and pick a folder on your PC: a picker opens right inside the tab, with big **Back / Up a level / Start** buttons, then **✓ Use this folder**. It then shows up in the MPC's own browser, on the SD card or USB drive, in a folder with your PC's name. It connects whenever MPC TOOLS is open, and is removed from the MPC when you close it.
 
 Already use the separate MPC Link app? Close it first (right-click its icon by the clock → Quit). MPC TOOLS uses the same settings, so your folders carry over.
 
@@ -119,7 +119,7 @@ GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H=windowsgui -s -w" -o "
 
 ## Credits
 
-- **[MPC Link](https://github.com/padbangers/mpc-link)** by Padbangers (MIT): built in as the PC Folders tab, under `linkcore/`, with its look and credit kept. It also fixes the folder picker opening behind other windows.
+- **[MPC Link](https://github.com/padbangers/mpc-link)** by Padbangers (MIT): built in as the PC Folders tab, under `linkcore/`, with its look and credit kept. MPC TOOLS adds a folder picker inside the page, because the Windows folder window could open behind other windows.
 - **[mpc-addin-remote](https://github.com/jacob-sabella/mpc-addin-remote)** and **[mpc-addin-filebrowser](https://github.com/jacob-sabella/mpc-addin-filebrowser)** by Jacob Sabella, and **[mpc-addin-skipback](https://github.com/sd88me/mpc-addin-skipback)** by sd88me: the addins MPC TOOLS talks to.
 - **[Open MPC](https://open-mpc.github.io/)**, the community that makes all of this possible.
 - Made with help from Claude (Anthropic).

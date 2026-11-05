@@ -72,6 +72,23 @@ li:first-child { border-top:0; padding-top:0; }
 li input { width:34%; flex:none; padding:7px 10px; }
 li .path { flex:1; color:var(--text-dim); font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .empty { color:var(--text-dim); font-size:15px; padding:0 0 10px; }
+.picker[hidden] { display:none; }
+.picker { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:50; }
+.picker__box { background:var(--panel); border-radius:var(--radius); width:min(640px, 94vw); max-height:88vh; display:flex; flex-direction:column;
+  box-shadow:0 12px 40px rgba(0,0,0,.35); }
+.picker__head { padding:16px 18px 12px 22px; font-size:18px; word-break:break-all; display:flex; gap:12px; align-items:flex-start; justify-content:space-between; }
+.picker__hint { font-size:14px; color:var(--text-dim); margin-top:2px; word-break:normal; }
+.picker__x { flex:none; width:48px; height:48px; border-radius:var(--radius-sm); border:1px solid var(--edge-dark); background:transparent;
+  font-size:22px; cursor:pointer; color:var(--text); }
+.picker__x:hover { background:var(--bg-2); }
+.picker__nav { display:flex; gap:10px; padding:0 18px 12px; border-bottom:1px solid var(--edge); flex-wrap:wrap; }
+.picker__nav .btn, .picker__foot .btn { padding:13px 20px; font-size:16px; }
+.picker .btn:disabled { opacity:.35; cursor:default; }
+.picker__list { overflow:auto; padding:10px 14px; flex:1; }
+.pick-item { display:block; width:100%; text-align:left; font:inherit; font-size:18px; padding:14px 16px; margin:6px 0;
+  background:var(--bg); border:1px solid var(--edge); border-radius:var(--radius-sm); cursor:pointer; color:var(--text); }
+.pick-item:hover { background:var(--bg-2); border-color:var(--edge-dark); }
+.picker__foot { display:flex; gap:10px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--edge); }
 .found { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; color:var(--text-dim); font-size:14px; }
 
 .credits p { margin:0 0 12px; }
@@ -212,6 +229,22 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
   · <button id="creditsLink">Credits</button>
   <small id="ver"></small>
 </footer>
+<div id="picker" class="picker" hidden>
+  <div class="picker__box">
+    <div class="picker__head"><div><strong id="pickWhere">Choose a folder to share</strong><div class="picker__hint" id="pickHint"></div></div>
+      <button class="picker__x" id="pickX" title="Close">✕</button></div>
+    <div class="picker__nav">
+      <button class="btn btn--ghost" id="pickBack">◀ Back</button>
+      <button class="btn btn--ghost" id="pickUp">⬆ Up a level</button>
+      <button class="btn btn--ghost" id="pickHome">⌂ Start</button>
+    </div>
+    <div class="picker__list" id="pickList"></div>
+    <div class="picker__foot">
+      <button class="btn btn--ghost" id="pickClose">Cancel</button>
+      <button class="btn btn--primary" id="pickUse">✓ Use this folder</button>
+    </div>
+  </div>
+</div>
 <script>
 const T = new URLSearchParams(location.search).get("t");
 const $ = id => document.getElementById(id);
@@ -266,7 +299,40 @@ $("creditsLink").onclick = () => show($("creditsView").hidden);
 $("back").onclick = () => show(false);
 ["host", "cname", "drive"].forEach(id => { $(id).onfocus = () => editing = true; });
 $("save").onclick = async () => { editing = false; render(await call("/api/settings", { host: $("host").value.trim(), computer_name: $("cname").value.trim(), drive: $("drive").value })); };
-$("add").onclick = async () => { $("add").disabled = true; try { render(await call("/api/folders/add")); } finally { $("add").disabled = false; } };
+$("add").onclick = () => { pickHist = []; openPicker("", true); };
+// MPC TOOLS: a folder picker inside the page (Windows' own chooser can open behind other windows).
+// Back = the folder you were in before, Up = the folder above, Start = drives and common folders, Cancel/X/Esc = close.
+var pickHist = [], pickCur = null;
+function openPicker(dir, fresh) {
+  call("/api/fs/list?dir=" + encodeURIComponent(dir)).then(function (l) {
+    if (!fresh && pickCur !== null && pickCur !== l.dir) pickHist.push(pickCur);
+    pickCur = l.dir;
+    var list = $("pickList");
+    $("pickWhere").textContent = l.dir || "Choose a folder to share";
+    $("pickHint").textContent = l.dir ? "Tap a folder to go into it, or use this one." : "Start here: tap a folder or drive.";
+    $("pickUse").disabled = !l.dir;
+    $("pickUse").onclick = function () { closePicker(); call("/api/folders/add?path=" + encodeURIComponent(l.dir)).then(render).catch(function (e) { alert(e.message); }); };
+    $("pickBack").disabled = !pickHist.length;
+    $("pickUp").disabled = !l.dir;
+    $("pickUp").onclick = function () { openPicker(l.parent || ""); };
+    list.innerHTML = "";
+    if (!l.entries || !l.entries.length) list.innerHTML = '<div class="empty">No folders in here. Use this folder, or go Back.</div>';
+    (l.entries || []).forEach(function (e) {
+      var b = document.createElement("button");
+      b.className = "pick-item"; b.textContent = (e.kind === "drive" ? "💽  " : "📁  ") + e.name;
+      b.onclick = function () { openPicker(e.path); };
+      list.appendChild(b);
+    });
+    $("picker").hidden = false; list.scrollTop = 0;
+  }).catch(function (e) { alert(e.message); });
+}
+function closePicker() { $("picker").hidden = true; pickHist = []; pickCur = null; }
+$("pickBack").onclick = function () { if (!pickHist.length) return; openPicker(pickHist.pop(), true); };
+$("pickHome").onclick = function () { openPicker(""); };
+$("pickClose").onclick = closePicker;
+$("pickX").onclick = closePicker;
+$("picker").addEventListener("click", function (ev) { if (ev.target === $("picker")) closePicker(); });
+document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("picker").hidden) closePicker(); });
 $("toggle").onclick = async () => render(await call($("toggle").textContent === "Connect" ? "/api/connect" : "/api/disconnect"));
 $("find").onclick = async () => {
   $("find").disabled = true; $("found").textContent = "Searching your network…";
