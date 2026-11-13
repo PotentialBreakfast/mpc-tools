@@ -528,6 +528,16 @@ func scanMPC() (mpcInfo, error) {
 	return info, nil
 }
 
+// tagVersion: the version in a release tag ("v1.2.0" or "cratedigger-vst-v2.0.0" -> "1.2.0" / "2.0.0")
+var tagNum = regexp.MustCompile(`[0-9]+(?:\.[0-9]+){1,3}`)
+
+func tagVersion(tag string) string {
+	if m := tagNum.FindAllString(tag, -1); len(m) > 0 {
+		return m[len(m)-1]
+	}
+	return strings.TrimPrefix(tag, "v")
+}
+
 // newer: is version a later than b? ("1.10.0" > "1.9.2")
 func newer(a, b string) bool {
 	pa, pb := strings.Split(strings.TrimPrefix(a, "v"), "."), strings.Split(strings.TrimPrefix(b, "v"), ".")
@@ -589,7 +599,7 @@ func updateAll(ids []string) (string, error) {
 			j.say("  %s: no release found on GitHub, skipped", p.Name)
 			continue
 		}
-		v := strings.TrimPrefix(r.Tag, "v")
+		v := tagVersion(r.Tag)
 		if cur, have := info.Plugins[p.ID]; have && cur.Version == v && len(ids) == 0 {
 			j.say("  %s %s: up to date", p.Name, v)
 			continue
@@ -606,6 +616,10 @@ func updateAll(ids []string) (string, error) {
 			return "", fmt.Errorf("%s: %v", p.Name, err)
 		}
 		if !folderName.MatchString(folder) {
+			if !p.Own && folder == "payload" { // the Open MPC catalogue's layout: its own installer puts the files in place
+				j.say("  %s: skipped. It's packaged for the Open MPC Plugin Manager (files that go to several places on the MPC), so install and update it there", p.Name)
+				continue
+			}
 			if !p.Own { // someone else's plugin: say what MPC TOOLS needs, carry on with the rest
 				j.say("  %s: skipped. Its download needs one \"<Maker> - VST - <Name>\" folder at the top of the zip (the folder that goes in VST2 Plugins); this one has \"%s\"", p.Name, folder)
 				continue
@@ -1147,7 +1161,7 @@ func registerPlugins(mux *http.ServeMux) {
 				x.Installed = in.Version
 			}
 			if rel, ok := rels[p.ID]; ok {
-				x.Latest = strings.TrimPrefix(rel.Tag, "v")
+				x.Latest = tagVersion(rel.Tag)
 			}
 			switch {
 			case x.Installed == "" && mErr == nil:

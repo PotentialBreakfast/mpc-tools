@@ -130,6 +130,8 @@ NEW VERSION and RECORD ON GITHUB stay for the PotentialSuite repos, which have t
 
 **For plugin makers:** MPC TOOLS reads your newest GitHub release. It needs a `.zip` with one `<Maker> - VST - <Name>` folder at the top (the folder that goes in `VST2 Plugins`), with a `plugin.json` holding `"version"` (and `"file32"` for TEST). If you have more than one zip, name them with `armhf` / `armv7` (Gen1) or `aarch64` / `arm64` (Gen2) and MPC TOOLS picks the one for the MPC. Zips with `source`, `windows` or `mac` in the name are skipped.
 
+Plugins packaged for the **Open MPC Plugin Manager** (a zip with a `payload` folder, like Crate Digger) put files in several places on the MPC, so MPC TOOLS shows their versions but leaves installing and updating to the Plugin Manager.
+
 ## Update the Potential plugins with one paste (older way)
 
 On MPC OS 3.10.1 or later, paste this into PowerShell to put the newest versions of all seven Potential plugins into **VST2 Plugins** on your MPC. Old copies (including any in the old **Synths** folders) are moved into a `Potential-backup-<date>` folder, not deleted. It asks before restarting the MPC app, so save your project first.
