@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugins</title>
+<style>
+  :root { --bg:#141518; --panel:#1e2024; --line:#2c2f35; --text:#e6e6e6; --dim:#8a8f98;
+          --red:#ff4a3d; --amber:#ffa62b; --green:#3fb950; --blue:#3da8ff; --violet:#a98bff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui, "Segoe UI", sans-serif; padding:18px 22px 40px; }
+  h2 { margin:0; font-size:19px; letter-spacing:.02em; }
+  .sub { color:var(--dim); font-size:13px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:16px; }
+  .head { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .head .sp { flex:1; }
+  table { width:100%; border-collapse:collapse; }
+  td, th { padding:9px 10px; text-align:left; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:600; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+  tr:last-child td { border-bottom:none; }
+  td.name { font-weight:600; font-size:16px; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; letter-spacing:.05em; }
+  .pill.ok { background:#16351f; color:var(--green); } .pill.old { background:#3a2c0f; color:var(--amber); }
+  .pill.missing, .pill.unknown { background:#2a2c31; color:var(--dim); }
+  button { font:600 15px system-ui, "Segoe UI", sans-serif; color:var(--text); background:#2a2e34; border:1px solid var(--line);
+           border-radius:12px; cursor:pointer; padding:0 18px; height:48px; }
+  button:hover:not(:disabled) { border-color:#5a5f69; }
+  button:disabled { opacity:.45; cursor:default; }
+  button.big { height:72px; font-size:17px; flex:1; min-width:170px; }
+  button.go { background:#3a2c0f; border-color:#a86f1a; }
+  button.gh { background:#1d2733; border-color:#35577a; }
+  button.small { height:38px; font-size:13px; padding:0 12px; border-radius:10px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .log { background:#0f1012; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:12px;
+         font:13px/1.5 ui-monospace, Consolas, monospace; color:#c4c8cf; max-height:240px; overflow:auto; white-space:pre-wrap; display:none; }
+  .finish { margin-top:10px; font-weight:600; }
+  .finish.ok { color:var(--green); } .finish.err { color:var(--red); } .finish.run { color:var(--amber); }
+  .bench td { font-size:14px; }
+  .v-PASS { color:var(--green); font-weight:700; } .v-WARN { color:var(--amber); font-weight:700; } .v-FAIL { color:var(--red); font-weight:700; }
+  .fields { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+  .fields label { color:var(--dim); font-size:13px; }
+  input[type=text], input[type=password], textarea { background:#121316; color:var(--text); border:1px solid var(--line); border-radius:10px;
+           padding:0 12px; height:44px; font:500 15px system-ui, "Segoe UI", sans-serif; }
+  textarea { height:90px; width:100%; padding:10px 12px; resize:vertical; }
+  .cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  .col h3 { margin:0 0 8px; font-size:15px; }
+  .item { display:flex; align-items:center; gap:8px; background:#17181b; border:1px solid var(--line); border-radius:10px;
+          padding:6px 6px 6px 12px; margin-bottom:6px; font-size:14px; word-break:break-all; }
+  .item span { flex:1; } .item button { height:34px; width:40px; padding:0; border-radius:8px; }
+  .none { color:var(--dim); font-size:13px; margin:6px 0 10px; }
+  .warn { color:var(--amber); font-size:13px; }
+  .gh-state { font-size:14px; } .gh-state.on { color:var(--green); }
+  #overlay { position:fixed; inset:0; background:rgba(10,11,13,.92); display:none; align-items:center; justify-content:center; z-index:10; }
+  #overlay.show { display:flex; }
+  .dlg { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:24px 26px; width:min(640px, 94vw); max-height:92vh; overflow:auto; }
+  .dlg h2 { margin-bottom:6px; } .dlg p { color:var(--dim); margin:6px 0 14px; }
+  .dlg ol { color:#c4c8cf; padding-left:20px; } .dlg li { margin:6px 0; }
+  .dlg a { color:var(--blue); }
+  .dirs { max-height:46vh; overflow:auto; margin:10px 0; }
+  .dir { display:block; width:100%; text-align:left; height:52px; margin-bottom:6px; font-size:16px; }
+  .path { font:600 14px ui-monospace, Consolas, monospace; background:#121316; padding:10px 12px; border-radius:10px; border:1px solid var(--line); word-break:break-all; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="head">
+    <h2>PotentialSuite on your MPC</h2>
+    <span class="sub" id="where"></span>
+    <span class="sp"></span>
+    <span class="gh-state" id="ghstate"></span>
+    <button class="small gh" id="ghbtn">GitHub</button>
+    <button class="small" id="refresh">Refresh</button>
+  </div>
+  <table>
+    <thead><tr><th>Plugin</th><th>On the MPC</th><th>Newest</th><th></th><th></th></tr></thead>
+    <tbody id="rows"><tr><td colspan="5" class="sub">Looking at the MPC and GitHub…</td></tr></tbody>
+  </table>
+  <div class="warn" id="errs"></div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <button class="big go" id="update">UPDATE ALL</button>
+    <button class="big" id="restart">RESTART MPC APP</button>
+    <button class="big" id="test">TEST<br><span class="sub">bench + load</span></button>
+    <button class="big gh" id="record" disabled>RECORD ON GITHUB</button>
+  </div>
+  <div class="fields">
+    <label>Recorded as</label><input type="text" id="device" size="12"><input type="text" id="firmware" size="14">
+    <span class="sub">Restarting the MPC app drops an unsaved project: save first.</span>
+  </div>
+  <div class="finish" id="finish"></div>
+  <table class="bench" id="bench" style="display:none;margin-top:10px">
+    <thead><tr><th>Plugin</th><th>Version</th><th>Result</th><th>Loads in</th><th>CPU (99%)</th><th>Worst</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+  <div class="head">
+    <h2>Plugin folders</h2>
+    <span class="sub">Where PotentialBreaks and PotentialWax look, and where SAVE KIT goes. Kept on this PC.</span>
+    <span class="sp"></span>
+    <button class="go" id="savef">SAVE TO MPC</button>
+  </div>
+  <div class="cols">
+    <div class="col"><h3>Breaks folders</h3><div id="l-breaks"></div><button class="small" data-add="breaks">+ ADD FOLDER</button></div>
+    <div class="col"><h3>Wax folders</h3><div id="l-wax"></div><button class="small" data-add="wax">+ ADD FOLDER</button></div>
+    <div class="col"><h3>Save kits to</h3><div id="l-kit"></div><button class="small" data-add="kit">CHOOSE FOLDER</button></div>
+  </div>
+  <div class="sub" style="margin-top:10px">Folders called <b>DRUM BREAKS LIBRARY</b> / <b>MELODIC LIBRARY</b> (or with "break" / "melodic" in the name)
+    at the top of a drive are found without listing them. After SAVE TO MPC, tap RESCAN in each plugin.</div>
+  <div class="warn" id="ferr"></div>
+</div>
+
+<div id="overlay"><div class="dlg" id="dlg"></div></div>
+
+<script>
+  var st = null, folders = { breaks: [], wax: [], kit: '' }, polling = null;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function overlay(html) { $('dlg').innerHTML = html; $('overlay').classList.add('show'); }
+  function closeOverlay() { $('overlay').classList.remove('show'); }
+
+  // ---- status ----
+  function load(fresh) {
+    $('rows').innerHTML = '<tr><td colspan="5" class="sub">Looking at the MPC and GitHub…</td></tr>';
+    return fetch('/api/plugins/status' + (fresh ? '?fresh=1' : ''), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
+      st = s;
+      var LABEL = { ok: 'UP TO DATE', old: 'UPDATE', missing: 'NOT ON THE MPC', unknown: '?' };
+      $('rows').innerHTML = s.plugins.map(function (p) {
+        return '<tr><td class="name">' + esc(p.name) + '</td><td>' + esc(p.installed || '–') + '</td><td>' + esc(p.latest || '–') + '</td>' +
+          '<td><span class="pill ' + p.state + '">' + LABEL[p.state] + '</span></td>' +
+          '<td style="text-align:right"><button class="small" data-one="' + p.id + '"' + (p.state === 'ok' ? ' disabled' : '') + '>UPDATE</button> ' +
+          '<button class="small gh" data-nv="' + p.id + '" data-name="' + esc(p.name) + '">NEW VERSION</button></td></tr>';
+      }).join('');
+      $('where').textContent = s.drive ? '· ' + s.drive.replace('/media/', '') + ' / VST2 Plugins' : '';
+      var e = [];
+      if (s.mpcError) e.push('MPC: ' + s.mpcError);
+      if (s.githubError) e.push('GitHub: ' + s.githubError);
+      $('errs').textContent = e.join('   ');
+      $('ghstate').textContent = s.github ? 'GitHub: connected as ' + (s.githubUser || 'you') + ' ✓' : 'GitHub not connected';
+      $('ghstate').className = 'gh-state' + (s.github ? ' on' : '');
+      if (!$('device').value) $('device').value = s.device;
+      if (!$('firmware').value) $('firmware').value = s.firmware;
+      document.querySelectorAll('[data-one]').forEach(function (b) { b.onclick = function () { run('/api/plugins/update?id=' + b.dataset.one); }; });
+      document.querySelectorAll('[data-nv]').forEach(function (b) { b.onclick = function () { newVersion(b.dataset.nv, b.dataset.name); }; });
+    }).catch(function () { $('rows').innerHTML = '<tr><td colspan="5" class="warn">Couldn\'t reach MPC TOOLS.</td></tr>'; });
+  }
+
+  // ---- jobs ----
+  function busy(on) { ['update', 'restart', 'test', 'savef'].forEach(function (id) { $(id).disabled = on; }); if (on) $('record').disabled = true; }
+  function run(url, body) {
+    var opt = { method: 'POST' };
+    if (body) { opt.body = JSON.stringify(body); opt.headers = { 'Content-Type': 'application/json' }; }
+    return fetch(url, opt).then(function (r) {
+      if (r.status === 409) return r.text().then(function (t) { alert(t); });
+      if (!r.ok) return r.text().then(function (t) { $('finish').className = 'finish err'; $('finish').textContent = t; });
+      busy(true); $('log').style.display = 'block'; poll();
+    });
+  }
+  function poll() {
+    clearTimeout(polling);
+    fetch('/api/plugins/job', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      $('log').textContent = (j.log || []).join('\n'); $('log').scrollTop = 1e9;
+      if (j.log && j.log.length) $('log').style.display = 'block';
+      var f = $('finish');
+      if (j.state === 'running') { f.className = 'finish run'; f.textContent = 'Working…'; busy(true); polling = setTimeout(poll, 800); }
+      else if (j.state === 'done' || j.state === 'error') {
+        busy(false);
+        f.className = 'finish ' + (j.state === 'done' ? 'ok' : 'err'); f.textContent = j.finish || '';
+        if (j.name === 'update' || j.name === 'newversion') load(true);
+        if (j.name === 'folders') loadFolders();
+      }
+      showBench(j.bench || []);
+      $('record').disabled = j.state === 'running' || !(j.bench || []).some(function (b) { return !b.err && b.verdict !== 'FAIL'; });
+    }).catch(function () { polling = setTimeout(poll, 2000); });
+  }
+  function showBench(list) {
+    var t = $('bench');
+    if (!list.length) { t.style.display = 'none'; return; }
+    t.style.display = '';
+    t.querySelector('tbody').innerHTML = list.map(function (b) {
+      if (b.err) return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.version) + '</td><td colspan="4" class="v-FAIL">' + esc(b.err) + '</td></tr>';
+      return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.version) + '</td><td class="v-' + esc(b.verdict) + '">' + esc(b.verdict) + '</td>' +
+        '<td>' + b.open_ms.toFixed(1) + ' ms</td><td>' + b.p99.toFixed(1) + '%</td><td>' + b.max.toFixed(1) + '%</td></tr>';
+    }).join('');
+  }
+  $('update').onclick = function () { run('/api/plugins/update'); };
+  $('restart').onclick = function () {
+    overlay('<h2>Restart the MPC app?</h2><p>The MPC app closes and opens again, so the new plugin versions load. ' +
+      '<b>An unsaved project is lost: save it first.</b></p><div class="row"><button class="big go" id="yes">RESTART NOW</button>' +
+      '<button class="big" id="no">CANCEL</button></div>');
+    $('yes').onclick = function () { closeOverlay(); run('/api/plugins/restart'); };
+    $('no').onclick = closeOverlay;
+  };
+  $('test').onclick = function () { run('/api/plugins/test'); };
+  $('record').onclick = function () {
+    if (!st || !st.github) { github(); return; }
+    run('/api/plugins/record?device=' + encodeURIComponent($('device').value) + '&firmware=' + encodeURIComponent($('firmware').value));
+  };
+  $('refresh').onclick = function () { load(true); loadFolders(); };
+
+  // ---- new version ----
+  function newVersion(id, name) {
+    if (!st || !st.github) { github('New versions are made on GitHub, so MPC TOOLS needs to be connected to it first.'); return; }
+    overlay('<h2>New version of ' + esc(name) + '</h2>' +
+      '<p>GitHub bumps the version, writes the release notes and builds it (about five minutes). Then UPDATE ALL installs it.</p>' +
+      '<div class="row"><button class="big go" data-b="patch">FIX<br><span class="sub">1.2.3 → 1.2.4</span></button>' +
+      '<button class="big go" data-b="minor">NEW FEATURE<br><span class="sub">1.2.3 → 1.3.0</span></button></div>' +
+      '<p style="margin-top:14px">What\'s new (optional, one change per line). Empty: the changes made since the last release.</p>' +
+      '<textarea id="notes"></textarea><div class="row" style="margin-top:12px"><button id="cx">CANCEL</button></div>');
+    document.querySelectorAll('[data-b]').forEach(function (b) {
+      b.onclick = function () { var n = $('notes').value; closeOverlay(); run('/api/plugins/newversion', { ID: id, Bump: b.dataset.b, Notes: n }); };
+    });
+    $('cx').onclick = closeOverlay;
+  }
+
+  // ---- GitHub ----
+  function github(why) {
+    var on = st && st.github;
+    overlay('<h2>Connect GitHub</h2>' + (why ? '<p>' + esc(why) + '</p>' : '') +
+      '<p>MPC TOOLS presses the buttons on GitHub for you (Mark tested, New version). It needs a token, made once:</p><ol>' +
+      '<li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub → new fine-grained token</a> (you may need to sign in).</li>' +
+      '<li>Name it <b>MPC TOOLS</b>, set <b>Expiration</b> to a year, and <b>Repository access</b> to <b>All repositories</b>.</li>' +
+      '<li>Under <b>Permissions → Repository</b>, set <b>Actions</b> to <b>Read and write</b>.</li>' +
+      '<li>Tap <b>Generate token</b>, then <b>copy</b> it and paste it here.</li></ol>' +
+      '<div class="row"><input type="password" id="tok" placeholder="paste the token here" style="flex:1"><button class="go" id="tokok">CONNECT</button></div>' +
+      '<div class="warn" id="tokerr"></div><p>It is kept in MPC TOOLS\' settings on this PC only.</p>' +
+      '<div class="row">' + (on ? '<button id="forget">DISCONNECT</button>' : '') + '<button id="cx">CLOSE</button></div>');
+    $('tokok').onclick = function () {
+      var t = $('tok').value.trim(); if (!t) return;
+      $('tokok').disabled = true; $('tokok').textContent = 'CHECKING…';
+      fetch('/api/github', { method: 'POST', body: JSON.stringify({ Token: t }), headers: { 'Content-Type': 'application/json' } }).then(function (r) {
+        if (r.ok) { closeOverlay(); load(false); }
+        else r.text().then(function (x) { $('tokerr').textContent = x; $('tokok').disabled = false; $('tokok').textContent = 'CONNECT'; });
+      });
+    };
+    var fg = $('forget'); if (fg) fg.onclick = function () { fetch('/api/github', { method: 'POST', body: '{"Token":""}' }).then(function () { closeOverlay(); load(false); }); };
+    $('cx').onclick = closeOverlay;
+  }
+  $('ghbtn').onclick = function () { github(); };
+
+  // ---- folders ----
+  function drawFolders() {
+    ['breaks', 'wax'].forEach(function (k) {
+      var l = folders[k];
+      $('l-' + k).innerHTML = l.length ? l.map(function (p, i) {
+        return '<div class="item"><span>' + esc(p.replace('/media/', '')) + '</span><button data-del="' + k + '" data-i="' + i + '" title="Remove">✕</button></div>';
+      }).join('') : '<div class="none">None listed: only the folders found by name.</div>';
+    });
+    $('l-kit').innerHTML = folders.kit ? '<div class="item"><span>' + esc(folders.kit.replace('/media/', '')) + '</span><button data-del="kit" title="Back to the default">✕</button></div>'
+      : '<div class="none">The default: PotentialBreaks/Kits (or PotentialWax/Kits) on the drive the sounds are on.</div>';
+    document.querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () {
+        if (b.dataset.del === 'kit') folders.kit = ''; else folders[b.dataset.del].splice(+b.dataset.i, 1);
+        drawFolders();
+      };
+    });
+  }
+  function loadFolders() {
+    return fetch('/api/plugins/folders', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (f) {
+      var src = f.saved || f.mpc || {};
+      folders = { breaks: (src.breaks || []).slice(), wax: (src.wax || []).slice(), kit: src.kit || '' };
+      $('ferr').textContent = f.error ? 'MPC: ' + f.error : (f.saved && f.mpc && JSON.stringify(f.saved) !== JSON.stringify(f.mpc)
+        ? 'The MPC has a different list from the one kept on this PC (after a reset?). SAVE TO MPC puts this one back.' : '');
+      drawFolders();
+    }).catch(function () {});
+  }
+  document.querySelectorAll('[data-add]').forEach(function (b) { b.onclick = function () { pick(b.dataset.add, ''); }; });
+  function pick(which, dir) {
+    var title = which === 'kit' ? 'Save kits to…' : which === 'breaks' ? 'Add a Breaks folder' : 'Add a Wax folder';
+    overlay('<h2>' + title + '</h2><div class="path">' + esc(dir ? dir.replace('/media/', '') : 'The MPC\'s drives') + '</div>' +
+      '<div class="dirs" id="dirs"><div class="sub">Looking…</div></div><div class="row">' +
+      (dir ? '<button class="go" id="use">USE THIS FOLDER</button><button id="up">UP</button>' : '') + '<button id="cx">CANCEL</button></div>');
+    $('cx').onclick = closeOverlay;
+    if (dir) {
+      $('use').onclick = function () {
+        if (which === 'kit') folders.kit = dir;
+        else if (folders[which].indexOf(dir) < 0) folders[which].push(dir);
+        closeOverlay(); drawFolders();
+      };
+      $('up').onclick = function () { var u = dir.substring(0, dir.lastIndexOf('/')); pick(which, u === '/media' ? '' : u); };
+    }
+    fetch('/api/mpcdirs?dir=' + encodeURIComponent(dir || '/media')).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) { $('dirs').innerHTML = '<div class="warn">' + esc(t) + '</div>'; });
+      return r.json().then(function (j) {
+        var base = dir || '/media';
+        $('dirs').innerHTML = (j.dirs || []).length ? '' : '<div class="none">No folders in here.</div>';
+        (j.dirs || []).forEach(function (n) {
+          var b = document.createElement('button'); b.className = 'dir'; b.textContent = '📁  ' + n;
+          b.onclick = function () { pick(which, base + '/' + n); };
+          $('dirs').appendChild(b);
+        });
+      });
+    });
+  }
+  $('savef').onclick = function () { run('/api/plugins/folders', folders); };
+
+  load(false); loadFolders(); poll();
+</script>
+</body>
+</html>

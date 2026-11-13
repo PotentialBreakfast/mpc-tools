@@ -16,7 +16,7 @@
   .brand { display:flex; align-items:center; gap:10px; margin-right:14px; padding-bottom:10px;
            font-weight:700; letter-spacing:.14em; font-size:14px; color:#cfd2d8; }
   .brand img { width:28px; height:28px; }
-  .tab { display:flex; align-items:center; gap:10px; padding:0 22px; height:52px; border:1px solid transparent;
+  .tab { display:flex; align-items:center; gap:10px; padding:0 16px; height:52px; white-space:nowrap; border:1px solid transparent;
          border-bottom:none; border-radius:10px 10px 0 0; background:transparent; color:var(--dim);
          font:600 16px system-ui, "Segoe UI", sans-serif; cursor:pointer; position:relative; top:1px; }
   .tab:hover { color:var(--text); }
@@ -25,14 +25,16 @@
   .tab[data-t=remote] .pad { background:var(--red); box-shadow:0 0 8px rgba(255,74,61,.7); }
   .tab[data-t=files] .pad { background:var(--amber); box-shadow:0 0 8px rgba(255,166,43,.7); }
   .tab[data-t=link] .pad { background:#3da8ff; box-shadow:0 0 8px rgba(61,168,255,.7); }
+  .tab[data-t=plugins] .pad { background:#3fb950; box-shadow:0 0 8px rgba(63,185,80,.7); }
   .dot.setup, .dot.off, .dot.external { background:#777; }
   .dot { width:8px; height:8px; border-radius:50%; background:#555; }
   .dot.ok { background:var(--green); } .dot.connecting { background:var(--amber); animation:blink 1s infinite; }
   .dot.error { background:var(--red); } .dot.addins { background:var(--amber); }
   @keyframes blink { 50% { opacity:.3; } }
   .key { font-size:11px; color:#666b74; font-weight:500; }
+  @media (max-width: 1320px) { .key { display:none; } .brand { margin-right:4px; } }
   .spacer { flex:1; }
-  #skip { align-self:center; margin:0 4px 10px 0; display:flex; align-items:center; gap:10px; height:44px; padding:0 18px;
+  #skip { align-self:center; margin:0 4px 10px 0; display:flex; white-space:nowrap; align-items:center; gap:10px; height:44px; padding:0 18px;
           background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:10px; cursor:pointer;
           font:600 15px system-ui, "Segoe UI", sans-serif; }
   #skip:hover { border-color:#4a4e57; }
@@ -83,6 +85,7 @@
   <button class="tab active" data-t="remote"><span class="pad"></span>Remote<span class="dot" id="dot-remote"></span><span class="key">Ctrl+1</span></button>
   <button class="tab" data-t="files"><span class="pad"></span>File Browser<span class="dot" id="dot-files"></span><span class="key">Ctrl+2</span></button>
   <button class="tab" data-t="link" title="Your PC's folders in the MPC's own browser (MPC Link)"><span class="pad"></span>PC Folders<span class="dot" id="dot-link"></span><span class="key">Ctrl+3</span></button>
+  <button class="tab" data-t="plugins" title="Your Potential plugins: versions, update, test, folders"><span class="pad"></span>Plugins<span class="key">Ctrl+4</span></button>
   <div class="spacer"></div>
   <button class="hbtn" id="obsbtn" title="Show the MPC screen in OBS">OBS</button>
   <button class="hbtn" id="setbtn" title="Change which MPC to connect to">⚙</button>
@@ -99,6 +102,9 @@
     <iframe id="frame-files" title="MPC File Browser" hidden></iframe>
     <div class="msg" id="msg-files"></div>
   </section>
+  <section class="view" id="view-plugins">
+    <iframe id="frame-plugins" title="Plugins"></iframe>
+  </section>
   <section class="view" id="view-link">
     <iframe id="frame-link" title="MPC Link" hidden></iframe>
     <div class="msg" id="msg-link"></div>
@@ -112,6 +118,7 @@
     document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('active', b.dataset.t === t); });
     document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + t); });
     var f = document.getElementById('frame-' + t);
+    if (t === 'plugins' && !f.getAttribute('src')) f.src = '/plugins';   // loads the first time it's opened
     if (!f.hidden) try { f.focus(); } catch (e) {}
     try { localStorage.setItem('mpctools-tab', t); } catch (e) {}
   }
@@ -120,8 +127,9 @@
     if (e.ctrlKey && e.key === '1') { e.preventDefault(); show('remote'); }
     if (e.ctrlKey && e.key === '2') { e.preventDefault(); show('files'); }
     if (e.ctrlKey && e.key === '3') { e.preventDefault(); show('link'); }
+    if (e.ctrlKey && e.key === '4') { e.preventDefault(); show('plugins'); }
   });
-  try { var last = localStorage.getItem('mpctools-tab'); if (last === 'files' || last === 'link') show(last); } catch (e) {}
+  try { var last = localStorage.getItem('mpctools-tab'); if (last === 'files' || last === 'link' || last === 'plugins') show(last); } catch (e) {}
 
   function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
 

@@ -7,6 +7,7 @@
 - 📁 **File Browser**: drag files between your PC and the MPC's drives.
 - 🗂️ **PC Folders**: your PC's folders appear *inside the MPC's own browser*, with no copying (MPC Link built in).
 - ⏺️ **Save last 60 s**: jamming and something good just happened? One click saves the last minute of the MPC's output as a WAV.
+- 🎛️ **Plugins**: the PotentialSuite plugins on your MPC. See which version each is on, **update them all** in one tap, **restart the MPC app**, **test** them (CPU bench and load test) and **record** the result on GitHub, make a **new version**, and set the **folders** PotentialBreaks and PotentialWax look in.
 
 One click to open, nothing to type. Made by **PotentialBreaks** for my own setup, and shared free.
 
@@ -95,7 +96,21 @@ The inMusic firmware with the built-in **user access** mode (remote screen and S
 
 MPC TOOLS 1.3.0 loads them for you. If you open it within a few minutes of switching the MPC on, it does it by itself. Later, the Remote tab shows a **Load add-ons** button instead, because loading them restarts the MPC app (save your project first). Nothing on the MPC is changed for good: the fix lives in the MPC's memory, so switching the MPC off and on always starts it normally again.
 
-## Update the Potential plugins in one go
+## The Plugins tab (1.4.0)
+
+Everything for the PotentialSuite plugins, with no PowerShell lines to paste:
+
+- **The list** shows each plugin's version on the MPC and the newest on GitHub, marked **UP TO DATE** or **UPDATE**.
+- **UPDATE ALL** downloads the newest version of every plugin and puts it in **VST2 Plugins** on your MPC. Old copies are moved to a `Potential-backup-<date>` folder, not deleted. Each row also has its own **UPDATE**.
+- **RESTART MPC APP** so the new versions load (save your project first).
+- **TEST** runs Open MPC's CPU bench on each plugin on the MPC (a Gen1 MPC such as the MPC One). It also loads and runs each plugin, so it doubles as a load test. The results show on the page and go to `Potential-bench.txt` on your Desktop.
+- **RECORD ON GITHUB** (after TEST, once you've played them): each plugin's GitHub page gets a "works on" entry and its CPU figure.
+- **NEW VERSION** (on each row): GitHub bumps the version, writes the release notes (yours, or the changes since the last release), and builds and publishes it. About five minutes later UPDATE ALL installs it.
+- **Plugin folders**: the folders PotentialBreaks and PotentialWax look in, and where SAVE KIT saves. Pick them from the MPC's drives, tap **SAVE TO MPC**, then RESCAN in each plugin. The lists are kept on your PC too, so SAVE TO MPC puts them back after an MPC reset.
+
+RECORD ON GITHUB and NEW VERSION need MPC TOOLS connected to GitHub once: tap **GitHub** on the tab and follow the four steps (a fine-grained token with **Actions: Read and write**). The token is kept in MPC TOOLS' settings on your PC only. The same two jobs are buttons on each plugin's GitHub page too (Actions → **New version** / **Mark tested** → Run workflow).
+
+## Update the Potential plugins with one paste (older way)
 
 On MPC OS 3.10.1 or later, paste this into PowerShell to put the newest versions of all seven Potential plugins into **VST2 Plugins** on your MPC. Old copies (including any in the old **Synths** folders) are moved into a `Potential-backup-<date>` folder, not deleted. It asks before restarting the MPC app, so save your project first.
 ```

@@ -41,6 +41,9 @@ var iconPNG []byte
 //go:embed obs.html
 var obsPage []byte
 
+//go:embed plugins.html
+var pluginsPage []byte
+
 func validHostName(h string) bool {
 	for _, c := range h {
 		if !(c == '.' || c == '-' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
@@ -52,7 +55,7 @@ func validHostName(h string) bool {
 
 const appTitle = "MPC TOOLS"
 
-const appVersion = "1.3.0"
+const appVersion = "1.4.0"
 
 var (
 	host        = "" // the MPC's address: set on the first-run screen (Find MPC), saved in %AppData%\MPC TOOLS\settings.ini
@@ -72,14 +75,41 @@ func settingsPath() string {
 	return filepath.Join(base, "MPC TOOLS", "settings.ini")
 }
 
+// The settings in %AppData%\MPC TOOLS\settings.ini, as key=value lines: host, and from 1.4.0 the Plugins tab's
+// github_token, device and firmware. Writing one keeps the others.
+var (
+	setMu    sync.Mutex
+	settings = map[string]string{}
+	setOrder []string
+)
+
+func getSetting(k string) string { setMu.Lock(); defer setMu.Unlock(); return settings[k] }
+
+func setSetting(k, v string) error {
+	setMu.Lock()
+	defer setMu.Unlock()
+	if _, ok := settings[k]; !ok {
+		setOrder = append(setOrder, k)
+	}
+	settings[k] = v
+	var sb strings.Builder
+	sb.WriteString("# MPC TOOLS settings\r\n")
+	for _, key := range setOrder {
+		if settings[key] != "" {
+			sb.WriteString(key + "=" + settings[key] + "\r\n")
+		}
+	}
+	p := settingsPath()
+	os.MkdirAll(filepath.Dir(p), 0o755)
+	return os.WriteFile(p, []byte(sb.String()), 0o600)
+}
+
 // saveHost remembers the MPC's address for next time.
 func saveHost(h string) error {
 	hostMu.Lock()
 	host = h
 	hostMu.Unlock()
-	p := settingsPath()
-	os.MkdirAll(filepath.Dir(p), 0o755)
-	return os.WriteFile(p, []byte("# MPC TOOLS settings\r\nhost="+h+"\r\n"), 0o644)
+	return setSetting("host", h)
 }
 
 // ---------- small helpers ----------
@@ -97,11 +127,11 @@ func exeDir() string {
 // Settings: %AppData%\MPC TOOLS\settings.ini (written by the first-run screen), then an optional "MPC TOOLS.ini"
 // next to the exe, which wins (for a portable copy): host=..., user=..., ssh=..., browser=<path to a browser exe>
 func loadSettings() {
-	readSettings(settingsPath())
-	readSettings(filepath.Join(exeDir(), "MPC TOOLS.ini"))
+	readSettings(settingsPath(), true)
+	readSettings(filepath.Join(exeDir(), "MPC TOOLS.ini"), false)
 }
 
-func readSettings(path string) {
+func readSettings(path string, keep bool) {
 	f, err := os.Open(path)
 	if err != nil {
 		return
@@ -118,7 +148,17 @@ func readSettings(path string) {
 			continue
 		}
 		v = strings.TrimSpace(v)
-		switch strings.ToLower(strings.TrimSpace(k)) {
+		key := strings.ToLower(strings.TrimSpace(k))
+		if keep { // the AppData file is rewritten by setSetting: remember everything in it
+			if key == "ip" {
+				key = "host"
+			}
+			if _, ok := settings[key]; !ok {
+				setOrder = append(setOrder, key)
+			}
+			settings[key] = v
+		}
+		switch key {
 		case "host", "ip":
 			host = v
 		case "user":
@@ -446,6 +486,7 @@ func main() {
 		page(shellPage)(w, r)
 	})
 	mux.HandleFunc("/remote", page(remotePage))
+	registerPlugins(mux) // the Plugins tab: /plugins and /api/plugins/...
 	mux.HandleFunc("/icon.png", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		w.Write(iconPNG)
