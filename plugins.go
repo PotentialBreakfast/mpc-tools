@@ -9,6 +9,8 @@ package main
 //   - NEW VERSION: runs a plugin repo's "New version" workflow (bump, notes, release)
 //   - PLUGIN FOLDERS: PotentialBreaks' and PotentialWax's folder lists and the SAVE KIT folder, kept on this PC and
 //     written to the MPC (folders.txt / kit-folder.txt on its drives)
+//   - ADD A PLUGIN (1.5.0): any plugin with releases on GitHub joins the list (paste its address), for versions,
+//     UPDATE and TEST; NEW VERSION and RECORD stay for the PotentialSuite repos, which have those workflows
 // GitHub needs a token for the workflows (pasted once, kept in settings.ini); everything else works without one.
 
 import (
@@ -36,23 +38,183 @@ var vstbench []byte
 const ghOwner = "PotentialBreakfast"
 
 type plugin struct {
-	ID   string `json:"id"`   // potentialheat
-	Name string `json:"name"` // PotentialHeat
+	ID     string `json:"id"`               // potentialheat
+	Name   string `json:"name"`             // PotentialHeat
+	Repo   string `json:"repo"`             // PotentialBreakfast/mpc-vst-potentialheat
+	Own    bool   `json:"own"`              // a PotentialSuite repo: has the New version / Mark tested workflows
+	Folder string `json:"folder,omitempty"` // added plugins: its folder in "VST2 Plugins", once installed
+	Got    string `json:"got,omitempty"`    // added plugins: the version MPC TOOLS installed (if plugin.json has none)
 }
 
 var suite = []plugin{
-	{"potentialbreaks", "PotentialBreaks"}, {"potentialheat", "PotentialHeat"}, {"potentialnoise", "PotentialNoise"},
-	{"potentialpatina", "PotentialPatina"}, {"potentialpunch", "PotentialPunch"}, {"potentialwarp", "PotentialWarp"},
-	{"potentialwax", "PotentialWax"},
+	{ID: "potentialbreaks", Name: "PotentialBreaks"}, {ID: "potentialheat", Name: "PotentialHeat"},
+	{ID: "potentialnoise", Name: "PotentialNoise"}, {ID: "potentialpatina", Name: "PotentialPatina"},
+	{ID: "potentialpunch", Name: "PotentialPunch"}, {ID: "potentialwarp", Name: "PotentialWarp"},
+	{ID: "potentialwax", Name: "PotentialWax"},
 }
 
+func init() {
+	for i := range suite {
+		suite[i].Repo, suite[i].Own = ghOwner+"/mpc-vst-"+suite[i].ID, true
+	}
+}
+
+// ---------- added plugins (anyone's, from GitHub) ----------
+
+var extraMu sync.Mutex
+
+func extrasPath() string { return filepath.Join(filepath.Dir(settingsPath()), "plugins-added.json") }
+
+func loadExtras() []plugin {
+	var l []plugin
+	if b, err := os.ReadFile(extrasPath()); err == nil {
+		json.Unmarshal(b, &l)
+	}
+	out := l[:0]
+	for _, p := range l {
+		if p.ID != "" && repoName.MatchString(p.Repo) {
+			p.Own = false
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func saveExtras(l []plugin) error {
+	b, _ := json.MarshalIndent(l, "", "  ")
+	return os.WriteFile(extrasPath(), b, 0o644)
+}
+
+// updateExtra changes one added plugin in the saved list.
+func updateExtra(id string, fn func(*plugin)) {
+	extraMu.Lock()
+	defer extraMu.Unlock()
+	l := loadExtras()
+	for i := range l {
+		if l[i].ID == id {
+			fn(&l[i])
+			saveExtras(l)
+			return
+		}
+	}
+}
+
+func allPlugins() []plugin { return append(append([]plugin(nil), suite...), loadExtras()...) }
+
 func pluginByID(id string) (plugin, bool) {
-	for _, p := range suite {
+	for _, p := range allPlugins() {
 		if p.ID == id {
 			return p, true
 		}
 	}
 	return plugin{}, false
+}
+
+var repoName = regexp.MustCompile(`^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$`)
+var repoInText = regexp.MustCompile(`(?i)(?:github\.com/)?([A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100})`)
+
+// addPlugin: "github.com/someone/their-plugin" (or someone/their-plugin) joins the list, if its newest release
+// has a download MPC TOOLS can use.
+func addPlugin(text string) (plugin, error) {
+	text = strings.TrimSpace(text)
+	text = strings.TrimPrefix(strings.TrimPrefix(text, "https://"), "http://")
+	text = strings.TrimPrefix(text, "www.")
+	m := repoInText.FindStringSubmatch(text)
+	if m == nil {
+		return plugin{}, errors.New("paste the plugin's GitHub address, like github.com/someone/their-plugin")
+	}
+	repo := strings.TrimSuffix(m[1], ".git")
+	if strings.HasPrefix(strings.ToLower(text), "github.com/") || !strings.Contains(text, ".") {
+		// fine: github.com/owner/repo/... or owner/repo
+	} else if !strings.HasPrefix(strings.ToLower(text), "github.com") {
+		return plugin{}, errors.New("that isn't a GitHub address")
+	}
+	for _, p := range allPlugins() {
+		if strings.EqualFold(p.Repo, repo) {
+			return plugin{}, fmt.Errorf("%s is already in the list", p.Name)
+		}
+	}
+	var r release
+	if _, err := ghDo("GET", "/repos/"+repo+"/releases/latest", nil, &r); err != nil {
+		if strings.Contains(err.Error(), "404") {
+			return plugin{}, fmt.Errorf("%s has no releases on GitHub (or isn't public)", repo)
+		}
+		return plugin{}, err
+	}
+	if pickAsset(r, "") == "" {
+		return plugin{}, fmt.Errorf("%s's newest release (%s) has no .zip download for the MPC", repo, r.Tag)
+	}
+	short := repo[strings.Index(repo, "/")+1:]
+	name := short
+	for _, pre := range []string{"mpc-vst-", "mpc-plugin-", "mpc-"} {
+		if len(name) > len(pre) && strings.HasPrefix(strings.ToLower(name), pre) {
+			name = name[len(pre):]
+		}
+	}
+	id := strings.ToLower(strings.NewReplacer(".", "-", "_", "-").Replace(short))
+	if _, taken := pluginByID(id); taken {
+		id = strings.ToLower(strings.Replace(repo, "/", "--", 1))
+	}
+	p := plugin{ID: id, Name: name, Repo: repo}
+	extraMu.Lock()
+	l := append(loadExtras(), p)
+	err := saveExtras(l)
+	extraMu.Unlock()
+	if err != nil {
+		return plugin{}, err
+	}
+	relMu.Lock()
+	relTime = time.Time{}
+	relMu.Unlock()
+	return p, nil
+}
+
+func removePlugin(id string) bool {
+	extraMu.Lock()
+	defer extraMu.Unlock()
+	l := loadExtras()
+	for i := range l {
+		if l[i].ID == id {
+			saveExtras(append(l[:i], l[i+1:]...))
+			return true
+		}
+	}
+	return false
+}
+
+// pickAsset: the release's download for the MPC. A PotentialSuite-style "-mpc-sdk.zip" first; otherwise a .zip,
+// preferring one that names this MPC's kind (armhf / armv7 for a Gen1, aarch64 / arm64 for a Gen2).
+func pickAsset(r release, arch string) string {
+	best, bestScore := "", -1
+	for _, a := range r.Assets {
+		n := strings.ToLower(a.Name)
+		if !strings.HasSuffix(n, ".zip") {
+			continue
+		}
+		score := 1
+		if strings.HasSuffix(n, "-mpc-sdk.zip") {
+			score = 100
+		}
+		for _, bad := range []string{"source", "src", "windows", "win64", "macos", "-mac", "debug"} {
+			if strings.Contains(n, bad) {
+				score = 0
+			}
+		}
+		gen1 := strings.Contains(n, "armhf") || strings.Contains(n, "armv7") || strings.Contains(n, "gen1")
+		gen2 := strings.Contains(n, "aarch64") || strings.Contains(n, "arm64") || strings.Contains(n, "gen2")
+		if score > 0 && arch != "" {
+			is64 := strings.HasPrefix(arch, "aarch64") || strings.HasPrefix(arch, "arm64")
+			if (is64 && gen2) || (!is64 && gen1) {
+				score += 10
+			} else if (is64 && gen1 && !gen2) || (!is64 && gen2 && !gen1) {
+				score = 0
+			}
+		}
+		if score > bestScore && score > 0 {
+			best, bestScore = a.URL, score
+		}
+	}
+	return best
 }
 
 // ---------- running things on the MPC ----------
@@ -118,6 +280,9 @@ func shq(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'
 
 var gh = &http.Client{Timeout: 30 * time.Second}
 
+// ghAPI: GitHub's API (MPCTOOLS_GH_API points it at a test server instead)
+var ghAPI = firstNonEmpty(os.Getenv("MPCTOOLS_GH_API"), "https://api.github.com")
+
 func ghToken() string { return strings.TrimSpace(getSetting("github_token")) }
 
 func ghDo(method, path string, body any, out any) (int, error) {
@@ -126,7 +291,7 @@ func ghDo(method, path string, body any, out any) (int, error) {
 		b, _ := json.Marshal(body)
 		rd = bytes.NewReader(b)
 	}
-	req, err := http.NewRequest(method, "https://api.github.com"+path, rd)
+	req, err := http.NewRequest(method, ghAPI+path, rd)
 	if err != nil {
 		return 0, err
 	}
@@ -174,23 +339,24 @@ var (
 func latestReleases(fresh bool) (map[string]release, error) {
 	relMu.Lock()
 	defer relMu.Unlock()
-	if !fresh && time.Since(relTime) < 2*time.Minute && len(relCache) == len(suite) {
+	all := allPlugins()
+	if !fresh && time.Since(relTime) < 2*time.Minute && len(relCache) == len(all) {
 		return relCache, nil
 	}
 	out := map[string]release{}
 	var firstErr error
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	for _, p := range suite {
+	for _, p := range all {
 		wg.Add(1)
 		go func(p plugin) {
 			defer wg.Done()
 			var r release
-			_, err := ghDo("GET", "/repos/"+ghOwner+"/mpc-vst-"+p.ID+"/releases/latest", nil, &r)
+			_, err := ghDo("GET", "/repos/"+p.Repo+"/releases/latest", nil, &r)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil && firstErr == nil {
-				firstErr = err
+				firstErr = fmt.Errorf("%s: %v", p.Name, err)
 			}
 			if err == nil {
 				out[p.ID] = r
@@ -208,7 +374,11 @@ func dispatch(id, workflow string, inputs map[string]string) error {
 	if ghToken() == "" {
 		return errors.New("connect GitHub first (the GitHub button on this tab)")
 	}
-	_, err := ghDo("POST", "/repos/"+ghOwner+"/mpc-vst-"+id+"/actions/workflows/"+workflow+"/dispatches",
+	p, ok := pluginByID(id)
+	if !ok || !p.Own {
+		return errors.New("that plugin isn't one of the PotentialSuite repos")
+	}
+	_, err := ghDo("POST", "/repos/"+p.Repo+"/actions/workflows/"+workflow+"/dispatches",
 		map[string]any{"ref": "main", "inputs": inputs}, nil)
 	return err
 }
@@ -293,10 +463,10 @@ type mpcInfo struct {
 }
 
 const scanScript = `
-for d in /media/*/"VST2 Plugins"/*" - VST - Potential"*; do
+for d in /media/*/"VST2 Plugins"/*" - VST - "*; do
   [ -d "$d" ] || continue
   v=$(sed -n 's/.*"version": *"\([0-9.]*\)".*/\1/p' "$d/plugin.json" "$d/mpc-plugin.json" 2>/dev/null | head -n 1)
-  echo "P|${d##* - VST - }|$v|$d"
+  echo "P|${d##*/}|$v|$d"
 done
 echo "A|$(uname -m)"
 for d in /media/*/"VST2 Plugins"/"PotentialBreaks - VST - "*; do [ -d "$d" ] && { d="${d%/VST2 Plugins/*}"; echo "V|$d"; break; }; done
@@ -312,16 +482,26 @@ func scanMPC() (mpcInfo, error) {
 		return info, err
 	}
 	first := ""
+	all := allPlugins()
 	for _, l := range strings.Split(out, "\n") {
 		f := strings.SplitN(strings.TrimSpace(l), "|", 4)
 		switch f[0] {
 		case "P":
 			if len(f) == 4 {
-				id := strings.ToLower(f[1])
-				if _, ok := pluginByID(id); ok {
-					if cur, have := info.Plugins[id]; !have || newer(f[2], cur.Version) {
-						info.Plugins[id] = installed{Name: f[1], Version: f[2], Folder: f[3]}
+				base := f[1]
+				name := base[strings.Index(base, " - VST - ")+len(" - VST - "):]
+				for _, p := range all {
+					if !(p.Folder == base || strings.EqualFold(name, p.Name) || strings.EqualFold(name, p.ID)) {
+						continue
 					}
+					v := f[2]
+					if v == "" && p.Folder == base {
+						v = p.Got
+					}
+					if cur, have := info.Plugins[p.ID]; !have || newer(v, cur.Version) {
+						info.Plugins[p.ID] = installed{Name: name, Version: v, Folder: f[3]}
+					}
+					break
 				}
 			}
 		case "A":
@@ -368,7 +548,7 @@ func newer(a, b string) bool {
 
 // ---------- UPDATE ALL ----------
 
-var folderName = regexp.MustCompile(`^[A-Za-z0-9 ]+ - VST - [A-Za-z0-9 ]+$`)
+var folderName = regexp.MustCompile(`^[A-Za-z0-9 ._()&+-]+ - VST - [A-Za-z0-9 ._()&+-]+$`)
 var safeDrive = regexp.MustCompile(`^/media/[A-Za-z0-9_.-]+$`)
 
 func updateAll(ids []string) (string, error) {
@@ -395,9 +575,12 @@ func updateAll(ids []string) (string, error) {
 	}
 	defer os.RemoveAll(work)
 
-	type got struct{ id, folder, local, version string }
+	type got struct {
+		id, folder, local, version string
+		own                        bool
+	}
 	var todo []got
-	for _, p := range suite {
+	for _, p := range allPlugins() {
 		if len(ids) > 0 && !contains(ids, p.ID) {
 			continue
 		}
@@ -411,14 +594,9 @@ func updateAll(ids []string) (string, error) {
 			j.say("  %s %s: up to date", p.Name, v)
 			continue
 		}
-		url := ""
-		for _, a := range r.Assets {
-			if strings.HasSuffix(a.Name, "-mpc-sdk.zip") {
-				url = a.URL
-			}
-		}
+		url := pickAsset(r, info.Arch)
 		if url == "" {
-			j.say("  %s %s: no MPC OS 3.10.1 download in this release, skipped", p.Name, v)
+			j.say("  %s %s: no download for this MPC in the release, skipped", p.Name, v)
 			continue
 		}
 		j.say("  downloading %s %s…", p.Name, v)
@@ -428,9 +606,13 @@ func updateAll(ids []string) (string, error) {
 			return "", fmt.Errorf("%s: %v", p.Name, err)
 		}
 		if !folderName.MatchString(folder) {
+			if !p.Own { // someone else's plugin: say what MPC TOOLS needs, carry on with the rest
+				j.say("  %s: skipped. Its download needs one \"<Maker> - VST - <Name>\" folder at the top of the zip (the folder that goes in VST2 Plugins); this one has \"%s\"", p.Name, folder)
+				continue
+			}
 			return "", fmt.Errorf("%s: unexpected folder in the download: %s", p.Name, folder)
 		}
-		todo = append(todo, got{p.ID, folder, filepath.Join(dir, folder), v})
+		todo = append(todo, got{p.ID, folder, filepath.Join(dir, folder), v, p.Own})
 	}
 	if len(todo) == 0 {
 		return "Everything is up to date.", nil
@@ -457,7 +639,7 @@ swap() {
     [ "$s" = "$V" ] && continue
     if [ -d "$s/$2" ]; then k="${s#/}"; k="${k#media/}"; mkdir -p "$B/$k"; mv "$s/$2" "$B/$k/"; moved=1; echo "old copy moved out of $s: $2"; fi
   done
-  v=$(sed -n 's/.*"version": *"\([0-9.]*\)".*/\1/p' "$V/$2/plugin.json" | head -n 1)
+  v=$(sed -n 's/.*"version": *"\([0-9.]*\)".*/\1/p' "$V/$2/plugin.json" "$V/$2/mpc-plugin.json" 2>/dev/null | head -n 1)
   echo "installed: $2 $v"
 }
 `)
@@ -468,6 +650,15 @@ swap() {
 	out, err := mpcRun(sb.String(), 2*time.Minute)
 	if err != nil {
 		return "", err
+	}
+	for _, t := range todo { // added plugins: remember their folder and version
+		if !t.own && strings.Contains(out, "installed: "+t.folder) {
+			f, ver := t.folder, t.version
+			updateExtra(t.id, func(x *plugin) {
+				x.Folder, x.Got = f, ver
+				x.Name = f[strings.Index(f, " - VST - ")+len(" - VST - "):] // its real name, from the folder
+			})
+		}
 	}
 	backup := ""
 	for _, l := range strings.Split(strings.TrimSpace(out), "\n") {
@@ -594,7 +785,7 @@ func testAll() (string, error) {
 		return "", fmt.Errorf("this MPC is %s (a Gen2): the bench is for Gen1 MPCs (armv7), where the catalog's figure is measured", info.Arch)
 	}
 	if len(info.Plugins) == 0 {
-		return "", errors.New("no Potential plugins found in \"VST2 Plugins\" on the MPC")
+		return "", errors.New("none of the plugins in the list are in \"VST2 Plugins\" on the MPC")
 	}
 	tmp, err := os.CreateTemp("", "vstbench-")
 	if err != nil {
@@ -711,6 +902,10 @@ func recordTested(device, firmware string) (string, error) {
 	}
 	n := 0
 	for _, b := range results {
+		if p, _ := pluginByID(b.ID); !p.Own {
+			j.say("  %s: not a PotentialSuite repo, so nothing to record (its bench line is in Potential-bench.txt)", b.Name)
+			continue
+		}
 		if b.Err != "" || b.Verdict == "FAIL" || b.Version == "" {
 			j.say("  %s: not recorded (%s)", b.Name, firstNonEmpty(b.Err, "the bench said FAIL"))
 			continue
@@ -946,7 +1141,7 @@ func registerPlugins(mux *http.ServeMux) {
 			State     string `json:"state"` // ok, old, missing, unknown
 		}
 		var rows []row
-		for _, p := range suite {
+		for _, p := range allPlugins() {
 			x := row{plugin: p}
 			if in, ok := info.Plugins[p.ID]; ok {
 				x.Installed = in.Version
@@ -999,6 +1194,31 @@ func registerPlugins(mux *http.ServeMux) {
 			ids = []string{id}
 		}
 		startJob(w, "update", func() (string, error) { return updateAll(ids) })
+	})
+	mux.HandleFunc("/api/plugins/add", func(w http.ResponseWriter, r *http.Request) {
+		touch()
+		if !postOnly(w, r) {
+			return
+		}
+		var req struct{ Address string }
+		json.NewDecoder(io.LimitReader(r.Body, 8<<10)).Decode(&req)
+		p, err := addPlugin(req.Address)
+		if err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		jsonOut(w, p)
+	})
+	mux.HandleFunc("/api/plugins/remove", func(w http.ResponseWriter, r *http.Request) {
+		touch()
+		if !postOnly(w, r) {
+			return
+		}
+		if !removePlugin(r.URL.Query().Get("id")) {
+			http.Error(w, "no such added plugin", 400)
+			return
+		}
+		w.WriteHeader(204)
 	})
 	mux.HandleFunc("/api/plugins/restart", func(w http.ResponseWriter, r *http.Request) {
 		touch()

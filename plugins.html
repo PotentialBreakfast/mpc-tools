@@ -64,10 +64,11 @@
 
 <div class="card">
   <div class="head">
-    <h2>PotentialSuite on your MPC</h2>
+    <h2>Plugins on your MPC</h2>
     <span class="sub" id="where"></span>
     <span class="sp"></span>
     <span class="gh-state" id="ghstate"></span>
+    <button class="small go" id="addp">+ ADD A PLUGIN</button>
     <button class="small gh" id="ghbtn">GitHub</button>
     <button class="small" id="refresh">Refresh</button>
   </div>
@@ -130,10 +131,11 @@
       st = s;
       var LABEL = { ok: 'UP TO DATE', old: 'UPDATE', missing: 'NOT ON THE MPC', unknown: '?' };
       $('rows').innerHTML = s.plugins.map(function (p) {
-        return '<tr><td class="name">' + esc(p.name) + '</td><td>' + esc(p.installed || '–') + '</td><td>' + esc(p.latest || '–') + '</td>' +
+        return '<tr><td class="name">' + esc(p.name) + (p.own ? '' : '<div class="sub">' + esc(p.repo) + '</div>') + '</td><td>' + esc(p.installed || '–') + '</td><td>' + esc(p.latest || '–') + '</td>' +
           '<td><span class="pill ' + p.state + '">' + LABEL[p.state] + '</span></td>' +
           '<td style="text-align:right"><button class="small" data-one="' + p.id + '"' + (p.state === 'ok' ? ' disabled' : '') + '>UPDATE</button> ' +
-          '<button class="small gh" data-nv="' + p.id + '" data-name="' + esc(p.name) + '">NEW VERSION</button></td></tr>';
+          (p.own ? '<button class="small gh" data-nv="' + p.id + '" data-name="' + esc(p.name) + '">NEW VERSION</button>'
+                 : '<button class="small" data-rm="' + p.id + '" data-name="' + esc(p.name) + '">REMOVE</button>') + '</td></tr>';
       }).join('');
       $('where').textContent = s.drive ? '· ' + s.drive.replace('/media/', '') + ' / VST2 Plugins' : '';
       var e = [];
@@ -146,6 +148,7 @@
       if (!$('firmware').value) $('firmware').value = s.firmware;
       document.querySelectorAll('[data-one]').forEach(function (b) { b.onclick = function () { run('/api/plugins/update?id=' + b.dataset.one); }; });
       document.querySelectorAll('[data-nv]').forEach(function (b) { b.onclick = function () { newVersion(b.dataset.nv, b.dataset.name); }; });
+      document.querySelectorAll('[data-rm]').forEach(function (b) { b.onclick = function () { removePlugin(b.dataset.rm, b.dataset.name); }; });
     }).catch(function () { $('rows').innerHTML = '<tr><td colspan="5" class="warn">Couldn\'t reach MPC TOOLS.</td></tr>'; });
   }
 
@@ -241,6 +244,41 @@
     $('cx').onclick = closeOverlay;
   }
   $('ghbtn').onclick = function () { github(); };
+
+  // ---------- add anyone's plugin from GitHub ----------
+  function addPlugin() {
+    overlay('<h3>Add a plugin from GitHub</h3><p>Copy the plugin\'s GitHub page address, then tap PASTE.</p>' +
+      '<div class="row"><input type="text" id="addr" placeholder="github.com/someone/their-plugin" style="flex:1">' +
+      '<button id="paste">PASTE</button></div>' +
+      '<div class="row" style="margin-top:12px"><button class="big go" id="addok">ADD</button><button class="big" id="cx">CANCEL</button></div>' +
+      '<div class="warn" id="adderr"></div>' +
+      '<p class="sub">It needs releases on GitHub with a .zip that has one "&lt;Maker&gt; - VST - &lt;Name&gt;" folder inside ' +
+      '(the folder that goes in VST2 Plugins). Then UPDATE installs it and TEST benches it.</p>');
+    $('cx').onclick = closeOverlay;
+    function go() {
+      var a = $('addr').value.trim();
+      if (!a) { $('adderr').textContent = 'Paste the address first.'; return; }
+      $('addok').disabled = true; $('addok').textContent = 'CHECKING…'; $('adderr').textContent = '';
+      fetch('/api/plugins/add', { method: 'POST', body: JSON.stringify({ Address: a }), headers: { 'Content-Type': 'application/json' } }).then(function (r) {
+        if (r.ok) { closeOverlay(); load(true); }
+        else r.text().then(function (t) { $('adderr').textContent = t; $('addok').disabled = false; $('addok').textContent = 'ADD'; });
+      });
+    }
+    $('paste').onclick = function () {
+      if (!navigator.clipboard || !navigator.clipboard.readText) { $('adderr').textContent = 'Paste with Ctrl+V into the box instead.'; $('addr').focus(); return; }
+      navigator.clipboard.readText().then(function (t) { $('addr').value = t.trim(); if (t.trim()) go(); })
+        .catch(function () { $('adderr').textContent = 'Paste with Ctrl+V into the box instead.'; $('addr').focus(); });
+    };
+    $('addok').onclick = go;
+    $('addr').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+  }
+  function removePlugin(id, name) {
+    overlay('<h3>Remove ' + esc(name) + ' from the list?</h3><p>It stays on the MPC: this only takes it off this list.</p>' +
+      '<div class="row"><button class="big go" id="yes">REMOVE</button><button class="big" id="cx">CANCEL</button></div>');
+    $('cx').onclick = closeOverlay;
+    $('yes').onclick = function () { fetch('/api/plugins/remove?id=' + encodeURIComponent(id), { method: 'POST' }).then(function () { closeOverlay(); load(false); }); };
+  }
+  $('addp').onclick = addPlugin;
 
   // ---- folders ----
   function drawFolders() {
