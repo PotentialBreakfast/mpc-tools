@@ -28,7 +28,7 @@
   .dot.setup, .dot.off, .dot.external { background:#777; }
   .dot { width:8px; height:8px; border-radius:50%; background:#555; }
   .dot.ok { background:var(--green); } .dot.connecting { background:var(--amber); animation:blink 1s infinite; }
-  .dot.error { background:var(--red); }
+  .dot.error { background:var(--red); } .dot.addins { background:var(--amber); }
   @keyframes blink { 50% { opacity:.3; } }
   .key { font-size:11px; color:#666b74; font-weight:500; }
   .spacer { flex:1; }
@@ -55,6 +55,8 @@
                 padding:0 34px; height:64px; font:600 17px system-ui, "Segoe UI", sans-serif; cursor:pointer; }
   .msg button:hover { border-color:#4a4e57; }
   .hint { font-size:13px; }
+  .msg button.go { background:#3a2c0f; border-color:#a86f1a; }
+  .warn { color:var(--amber); font-weight:600; }
   .hbtn { align-self:center; margin:0 4px 10px 0; height:44px; padding:0 14px; background:var(--panel); color:var(--text);
           border:1px solid var(--line); border-radius:10px; cursor:pointer; font:600 14px system-ui, "Segoe UI", sans-serif; }
   .hbtn:hover { border-color:#4a4e57; }
@@ -149,7 +151,18 @@
       return;
     }
     if (st.state === 'connecting') {
-      msg.innerHTML = '<h2>Connecting to ' + NAMES[t] + '…</h2><div class="hint">This can take a few seconds.</div>';
+      msg.innerHTML = '<h2>Connecting to ' + NAMES[t] + '…</h2><div class="hint">' +
+        esc(st.msg || 'This can take a few seconds.') + '</div>';
+    } else if (st.state === 'addins') {
+      msg.innerHTML = '<h2>The add-ons aren\'t loaded on the MPC</h2>' +
+        '<div>Since the MPC firmware update, the MPC app doesn\'t load Remote and Skipback by itself.</div>' +
+        '<button class="go">Load add-ons</button>' +
+        '<div class="warn">This restarts the MPC app: save your project first.</div>' +
+        '<div class="hint">Only needed once each time the MPC is switched on. MPC TOOLS does it by itself if you open it right after switching on.</div>';
+      msg.querySelector('button').onclick = function () {
+        this.disabled = true; this.textContent = 'Loading…';
+        fetch('/api/loadaddins', { method: 'POST' }).then(poll);
+      };
     } else {
       msg.innerHTML = '<h2>' + NAMES[t] + (st.state === 'external' ? ' is running separately' : " isn't connected") + '</h2>' +
         (st.msg ? '<pre>' + esc(st.msg) + '</pre>' : '') +

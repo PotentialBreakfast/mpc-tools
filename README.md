@@ -89,6 +89,12 @@ Everything stays between your PC and your MPC. MPC TOOLS has no accounts, no tra
 
 ---
 
+## Firmware with "user access" (November 2026)
+
+The inMusic firmware with the built-in **user access** mode (remote screen and SSH) starts the MPC app the standard way, so addins installed on the MPC aren't loaded any more. Symptom: the Remote tab can't connect and **Save last 60 s** says Skipback isn't loaded, while the File Browser still works.
+
+MPC TOOLS 1.3.0 loads them for you. If you open it within a few minutes of switching the MPC on, it does it by itself. Later, the Remote tab shows a **Load add-ons** button instead, because loading them restarts the MPC app (save your project first). Nothing on the MPC is changed for good: the fix lives in the MPC's memory, so switching the MPC off and on always starts it normally again.
+
 ## HAKAI firmware note
 
 On HAKAI, MPC addins can fail to load, because HAKAI's start-up script replaces the setting addins use to load (`LD_PRELOAD`). Symptom: the Remote tab says the connection was refused. The workaround is described in [this MPC Remote issue](https://github.com/jacob-sabella/mpc-addin-remote/issues).

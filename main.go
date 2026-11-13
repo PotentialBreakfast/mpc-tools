@@ -52,7 +52,7 @@ func validHostName(h string) bool {
 
 const appTitle = "MPC TOOLS"
 
-const appVersion = "1.2.1"
+const appVersion = "1.3.0"
 
 var (
 	host        = "" // the MPC's address: set on the first-run screen (Find MPC), saved in %AppData%\MPC TOOLS\settings.ini
@@ -154,6 +154,7 @@ type tool struct {
 	startCmd string                // run on the MPC first ("" = none)
 	ready    func(port int) bool   // does the tool really answer?
 	url      string                // what the tab shows when connected
+	prepare  func(t *tool) bool    // runs before the tunnel; false = stop here (it has set the state)
 
 	mu     sync.Mutex
 	state  string // connecting, ok, error
@@ -167,6 +168,8 @@ func (t *tool) set(state, msg string) {
 	t.state, t.msg = state, msg
 	t.mu.Unlock()
 }
+
+func (t *tool) isBusy() bool { t.mu.Lock(); defer t.mu.Unlock(); return t.busy }
 
 func (t *tool) status() map[string]string {
 	t.mu.Lock()
@@ -205,6 +208,9 @@ func (t *tool) connect() {
 		return
 	}
 	t.stop()
+	if t.prepare != nil && !t.prepare(t) {
+		return
+	}
 	h := getHost()
 	target := user + "@" + h
 	var errBuf bytes.Buffer
@@ -304,7 +310,7 @@ func skipbackSave() (string, string) {
 	case strings.HasPrefix(res, "error "):
 		return "error", "Skipback: " + strings.TrimSpace(res[6:])
 	case res == "notloaded":
-		return "error", "Skipback isn't running in the MPC app (it didn't pick up the request)."
+		return "error", "Skipback isn't loaded in the MPC app. Tap Load add-ons on the Remote tab."
 	default:
 		return "error", "Skipback didn't answer in time."
 	}
@@ -377,6 +383,31 @@ func main() {
 			r.Body.Close()
 			return r.StatusCode == 200
 		}}
+	// Since the "user access" firmware the MPC app no longer loads its addins by itself: load them when needed.
+	// force is set by the Remote tab's "Load add-ons" button; otherwise only right after the MPC was switched on.
+	var forceAddins atomic.Bool
+	remote.prepare = func(t *tool) bool {
+		force := forceAddins.Swap(false)
+		if force {
+			t.set("connecting", "Loading the add-ons. The MPC app is restarting, this takes up to a minute…")
+		} else {
+			t.set("connecting", "Checking the add-ons on the MPC…")
+		}
+		state, msg := loadAddins(force)
+		switch state {
+		case "busy":
+			t.set("addins", "")
+			return false
+		case "failed":
+			t.set("error", msg)
+			return false
+		case "loaded":
+			t.set("connecting", "Add-ons loaded. Connecting…")
+		default:
+			t.set("connecting", "")
+		}
+		return true
+	}
 	files := &tool{name: "File Browser", port: 6760, url: filesURL, state: "connecting",
 		startCmd: "systemctl start filebrowser",
 		ready: func(p int) bool {
@@ -425,6 +456,22 @@ func main() {
 		w.Header().Set("Cache-Control", "no-store")
 		json.NewEncoder(w).Encode(map[string]any{"remote": remote.status(), "files": files.status(), "link": link.status(),
 			"host": getHost(), "version": appVersion})
+	})
+	mux.HandleFunc("/api/loadaddins", func(w http.ResponseWriter, r *http.Request) { // the Remote tab's button
+		touch()
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", 405)
+			return
+		}
+		forceAddins.Store(true)
+		remote.set("connecting", "Loading the add-ons. The MPC app is restarting, this takes up to a minute…")
+		go func() {
+			for i := 0; i < 100 && remote.isBusy(); i++ { // a check may still be running: wait for it
+				time.Sleep(200 * time.Millisecond)
+			}
+			remote.connect()
+		}()
+		w.WriteHeader(204)
 	})
 	mux.HandleFunc("/retry", func(w http.ResponseWriter, r *http.Request) {
 		touch()
