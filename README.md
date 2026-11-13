@@ -10,7 +10,7 @@
 
 One click to open, nothing to type. Made by **PotentialBreaks** for my own setup, and shared free.
 
-![MPC TOOLS showing the MPC screen live](docs/images/mpc-tools-remote.png)
+![MPC TOOLS with the File Browser tab open, showing the MPC's drives](docs/images/mpc-tools-files.png)
 
 ---
 
