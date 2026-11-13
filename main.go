@@ -3,6 +3,7 @@
 //   - File Browser (jacob-sabella/mpc-addin-filebrowser, port 6760)
 //   - Folders      (MPC Link by Padbangers, built in): the PC's folders in the MPC's own browser
 //   - Save last 60 s (sd88me/mpc-addin-skipback)
+//
 // Opens hidden SSH tunnels to the MPC, serves the tabbed page on localhost:6721 and shows it in its own app window
 // (Brave, else Chrome, else Edge, in app mode). Closing the window closes everything.
 package main
@@ -21,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -55,7 +57,7 @@ func validHostName(h string) bool {
 
 const appTitle = "MPC TOOLS"
 
-const appVersion = "1.4.0"
+const appVersion = "1.4.1"
 
 var (
 	host        = "" // the MPC's address: set on the first-run screen (Find MPC), saved in %AppData%\MPC TOOLS\settings.ini
@@ -191,10 +193,10 @@ var probe = &http.Client{Timeout: 2 * time.Second}
 type tool struct {
 	name     string
 	port     int
-	startCmd string                // run on the MPC first ("" = none)
-	ready    func(port int) bool   // does the tool really answer?
-	url      string                // what the tab shows when connected
-	prepare  func(t *tool) bool    // runs before the tunnel; false = stop here (it has set the state)
+	startCmd string              // run on the MPC first ("" = none)
+	ready    func(port int) bool // does the tool really answer?
+	url      string              // what the tab shows when connected
+	prepare  func(t *tool) bool  // runs before the tunnel; false = stop here (it has set the state)
 
 	mu     sync.Mutex
 	state  string // connecting, ok, error
@@ -384,6 +386,18 @@ func findBrowser() string {
 		if _, err := os.Stat(browserPref); err == nil {
 			return browserPref
 		}
+	}
+	if runtime.GOOS == "darwin" { // a Mac: the same browsers, in Applications
+		home, _ := os.UserHomeDir()
+		for _, app := range []string{"Brave Browser", "Google Chrome", "Microsoft Edge", "Chromium"} {
+			for _, dir := range []string{"/Applications", filepath.Join(home, "Applications")} {
+				p := filepath.Join(dir, app+".app", "Contents", "MacOS", app)
+				if _, err := os.Stat(p); err == nil {
+					return p
+				}
+			}
+		}
+		return ""
 	}
 	rel := []string{ // Brave first (main browser), then Chrome, then Edge
 		`BraveSoftware\Brave-Browser\Application\brave.exe`,
@@ -648,12 +662,23 @@ func main() {
 	browser := findBrowser()
 	touch()
 	if browser == "" {
-		exec.Command("rundll32", "url.dll,FileProtocolHandler", pageURL).Start()
+		switch runtime.GOOS { // no Chromium browser: the default one (Safari on a Mac)
+		case "windows":
+			exec.Command("rundll32", "url.dll,FileProtocolHandler", pageURL).Start()
+		case "darwin":
+			exec.Command("open", pageURL).Start()
+		default:
+			exec.Command("xdg-open", pageURL).Start()
+		}
 		time.Sleep(15 * time.Second)
 		waitForPageToClose(70 * time.Second)
 		return
 	}
-	profile := filepath.Join(os.Getenv("LOCALAPPDATA"), "MPC TOOLS", "window")
+	base := os.Getenv("LOCALAPPDATA")
+	if base == "" { // a Mac: ~/Library/Caches
+		base, _ = os.UserCacheDir()
+	}
+	profile := filepath.Join(base, "MPC TOOLS", "window")
 	os.MkdirAll(profile, 0o755)
 	win := exec.Command(browser,
 		"--app="+pageURL,

@@ -21,6 +21,14 @@ Get **`MPC-TOOLS-<version>-windows-x64.exe`** from [**Releases**](../../releases
 
 The first time, Windows may say **"Windows protected your PC"**, because the app isn't signed (signing costs money). Click **More info → Run anyway**. The full source code is here, and every release is built from it by GitHub (see [How releases are made](#how-releases-are-made)).
 
+### Mac (new in 1.4.1, not yet tested on a real Mac)
+
+Get **`MPC-TOOLS-<version>-mac.zip`** from [**Releases**](../../releases), double-click it, and drag **MPC TOOLS** into **Applications**. It runs on Apple Silicon and Intel Macs (macOS 11 or newer).
+
+The first time, macOS will say it **can't check the app for malware**, because it isn't notarised by Apple (that costs money). Click **Done**, then open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. You only do this once.
+
+The Mac already has SSH. The window opens in Brave, Chrome or Edge if you have one, otherwise in Safari. If something doesn't work on your Mac, please [open an issue](../../issues).
+
 ---
 
 ## What you need
@@ -31,7 +39,7 @@ MPC TOOLS is a dashboard: it connects to small helper programs ("addins") that r
 
 | What | Why it's needed | How to get it |
 |---|---|---|
-| **Windows 10 or 11 (64-bit)** | MPC TOOLS is a Windows app | – |
+| **Windows 10 or 11 (64-bit)**, or a **Mac** (macOS 11+) | MPC TOOLS runs on these | – |
 | **OpenSSH Client** | Every connection to the MPC goes through SSH, a secure connection | Built into Windows 10/11. If it's missing: **Settings → System → Optional features → Add a feature → OpenSSH Client**. [Microsoft's guide](https://learn.microsoft.com/windows-server/administration/openssh/openssh_install_firstuse) |
 | **Brave, Chrome or Edge** | The app shows its window using one of these browsers (in "app mode", so it looks like a normal window) | Edge is already in Windows. If you have Brave or Chrome, MPC TOOLS uses those first |
 | **OBS Studio** *(optional)* | Only for streaming or recording the MPC screen | [obsproject.com](https://obsproject.com/) |

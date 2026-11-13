@@ -1,4 +1,4 @@
-# Builds MPC TOOLS for Windows from this source and publishes it as a GitHub release.
+# Builds MPC TOOLS for Windows and Mac from this source and publishes it as a GitHub release.
 # To release: set appVersion in main.go, add .github/release-notes/v<version>.md, push to main.
 name: Release
 
@@ -12,7 +12,61 @@ permissions:
   contents: write
 
 jobs:
+  mac:
+    # The Mac app: one binary for Apple Silicon and Intel, in MPC TOOLS.app, zipped.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Build the app
+        env:
+          GOTOOLCHAIN: local
+          GOFLAGS: -mod=mod
+          GOPROXY: direct
+          GOSUMDB: 'off'
+        run: |
+          V=$(grep -oE 'const appVersion = "[0-9.]+"' main.go | grep -oE '[0-9.]+')
+          go vet ./...
+          CGO_ENABLED=0 GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o mt-arm64 .
+          CGO_ENABLED=0 GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o mt-amd64 .
+          A="MPC TOOLS.app/Contents"
+          mkdir -p "$A/MacOS" "$A/Resources"
+          lipo -create -output "$A/MacOS/MPC TOOLS" mt-arm64 mt-amd64
+          mkdir icon.iconset
+          for n in 16 32 128 256 512; do
+            sips -z $n $n icon.png --out icon.iconset/icon_${n}x${n}.png >/dev/null
+            sips -z $((n*2)) $((n*2)) icon.png --out icon.iconset/icon_${n}x${n}@2x.png >/dev/null
+          done
+          iconutil -c icns icon.iconset -o "$A/Resources/icon.icns"
+          cat > "$A/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>CFBundleName</key><string>MPC TOOLS</string>
+            <key>CFBundleDisplayName</key><string>MPC TOOLS</string>
+            <key>CFBundleIdentifier</key><string>io.github.potentialbreakfast.mpctools</string>
+            <key>CFBundleExecutable</key><string>MPC TOOLS</string>
+            <key>CFBundleIconFile</key><string>icon</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>$V</string>
+            <key>CFBundleVersion</key><string>$V</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict></plist>
+          PLIST
+          codesign --force --deep -s - "MPC TOOLS.app"
+          codesign --verify --deep "MPC TOOLS.app"
+          lipo -info "$A/MacOS/MPC TOOLS"
+          ditto -c -k --keepParent "MPC TOOLS.app" "MPC-TOOLS-$V-mac.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: MPC-TOOLS-*-mac.zip
+
   release:
+    needs: mac
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -44,12 +98,19 @@ jobs:
           mkdir -p dist
           GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-H=windowsgui -s -w" \
             -o "dist/MPC-TOOLS-${{ steps.v.outputs.version }}-windows-x64.exe" .
-          cd dist && sha256sum *.exe | tee SHA256SUMS
+      - uses: actions/download-artifact@v4
+        if: steps.done.outputs.skip != '1'
+        with:
+          name: mac
+          path: dist
+      - name: Checksums
+        if: steps.done.outputs.skip != '1'
+        run: cd dist && sha256sum *.exe *.zip | tee SHA256SUMS
       - name: Publish
         if: steps.done.outputs.skip != '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           V=${{ steps.v.outputs.version }}
-          gh release create "v$V" dist/*.exe dist/SHA256SUMS --target "${{ github.sha }}" \
+          gh release create "v$V" dist/*.exe dist/*.zip dist/SHA256SUMS --target "${{ github.sha }}" \
             --title "MPC TOOLS $V" --notes-file ".github/release-notes/v$V.md"

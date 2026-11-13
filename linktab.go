@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -25,6 +26,10 @@ type linkTab struct {
 
 // externalLinkRunning: is the stand-alone MPC Link app (MPC-Link-*.exe) running?
 func externalLinkRunning() bool {
+	if runtime.GOOS != "windows" { // a Mac: the MPC Link app's process
+		out, _ := exec.Command("pgrep", "-if", "mpc[ -]link").Output()
+		return len(strings.TrimSpace(string(out))) > 0
+	}
 	c := exec.Command("tasklist", "/fo", "csv", "/nh")
 	hidden(c)
 	out, err := c.Output()
