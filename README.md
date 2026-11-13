@@ -95,6 +95,13 @@ The inMusic firmware with the built-in **user access** mode (remote screen and S
 
 MPC TOOLS 1.3.0 loads them for you. If you open it within a few minutes of switching the MPC on, it does it by itself. Later, the Remote tab shows a **Load add-ons** button instead, because loading them restarts the MPC app (save your project first). Nothing on the MPC is changed for good: the fix lives in the MPC's memory, so switching the MPC off and on always starts it normally again.
 
+## Update the Potential plugins in one go
+
+On MPC OS 3.10.1 or later, paste this into PowerShell to put the newest versions of all seven Potential plugins into **VST2 Plugins** on your MPC. Old copies (including any in the old **Synths** folders) are moved into a `Potential-backup-<date>` folder, not deleted. It asks before restarting the MPC app, so save your project first.
+```
+irm https://raw.githubusercontent.com/PotentialBreakfast/mpc-tools/main/scripts/update-potential-plugins.ps1 | iex
+```
+
 ## HAKAI firmware note
 
 On HAKAI, MPC addins can fail to load, because HAKAI's start-up script replaces the setting addins use to load (`LD_PRELOAD`). Symptom: the Remote tab says the connection was refused. The workaround is described in [this MPC Remote issue](https://github.com/jacob-sabella/mpc-addin-remote/issues).
