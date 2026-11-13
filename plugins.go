@@ -336,6 +336,8 @@ var (
 )
 
 // latestReleases: each plugin's newest release (kept for 2 minutes).
+// What GitHub said last is kept on disk with its ETag, so a check only asks "anything new?" (a 304 answer doesn't
+// use up GitHub's 60-an-hour allowance for apps without a login), and if GitHub can't be asked, the last answer is used.
 func latestReleases(fresh bool) (map[string]release, error) {
 	relMu.Lock()
 	defer relMu.Unlock()
@@ -343,31 +345,108 @@ func latestReleases(fresh bool) (map[string]release, error) {
 	if !fresh && time.Since(relTime) < 2*time.Minute && len(relCache) == len(all) {
 		return relCache, nil
 	}
+	disk := loadRelDisk()
 	out := map[string]release{}
 	var firstErr error
+	limited := false
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	for _, p := range all {
 		wg.Add(1)
 		go func(p plugin) {
 			defer wg.Done()
-			var r release
-			_, err := ghDo("GET", "/repos/"+p.Repo+"/releases/latest", nil, &r)
+			mu.Lock()
+			old, have := disk[p.Repo]
+			mu.Unlock()
+			r, etag, err := ghLatest(p.Repo, old.ETag)
 			mu.Lock()
 			defer mu.Unlock()
-			if err != nil && firstErr == nil {
-				firstErr = fmt.Errorf("%s: %v", p.Name, err)
-			}
-			if err == nil {
+			switch {
+			case err == errNotModified && have:
+				out[p.ID] = old.Release
+			case err == nil:
 				out[p.ID] = r
+				disk[p.Repo] = relDisk{etag, r}
+			default:
+				if have {
+					out[p.ID] = old.Release // GitHub didn't answer: show what it said last time
+				}
+				if strings.Contains(err.Error(), "rate limit") {
+					limited = true
+				} else if firstErr == nil {
+					firstErr = fmt.Errorf("%s: %v", p.Name, err)
+				}
 			}
 		}(p)
 	}
 	wg.Wait()
+	saveRelDisk(disk)
+	if limited && len(out) < len(all) {
+		firstErr = errors.New("GitHub's limit for apps without a login is used up for now (60 checks an hour). " +
+			"Wait a while, or tap the GitHub button and connect to lift it")
+	}
 	if len(out) > 0 {
 		relCache, relTime = out, time.Now()
 	}
 	return out, firstErr
+}
+
+type relDisk struct {
+	ETag    string  `json:"etag"`
+	Release release `json:"release"`
+}
+
+var errNotModified = errors.New("not modified")
+
+func relDiskPath() string { return filepath.Join(filepath.Dir(settingsPath()), "releases-cache.json") }
+
+func loadRelDisk() map[string]relDisk {
+	m := map[string]relDisk{}
+	if b, err := os.ReadFile(relDiskPath()); err == nil {
+		json.Unmarshal(b, &m)
+	}
+	return m
+}
+
+func saveRelDisk(m map[string]relDisk) {
+	b, _ := json.MarshalIndent(m, "", " ")
+	os.WriteFile(relDiskPath(), b, 0o644)
+}
+
+// ghLatest: a repo's newest release, asking with If-None-Match so an unchanged answer comes back as 304.
+func ghLatest(repo, etag string) (release, string, error) {
+	var r release
+	req, err := http.NewRequest("GET", ghAPI+"/repos/"+repo+"/releases/latest", nil)
+	if err != nil {
+		return r, "", err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	req.Header.Set("User-Agent", "MPC-TOOLS/"+appVersion)
+	if t := ghToken(); t != "" {
+		req.Header.Set("Authorization", "Bearer "+t)
+	}
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+	resp, err := gh.Do(req)
+	if err != nil {
+		return r, "", fmt.Errorf("couldn't reach GitHub: %v", err)
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	switch {
+	case resp.StatusCode == http.StatusNotModified:
+		return r, etag, errNotModified
+	case resp.StatusCode >= 300:
+		var e struct{ Message string }
+		json.Unmarshal(data, &e)
+		return r, "", fmt.Errorf("GitHub said %d: %s", resp.StatusCode, e.Message)
+	}
+	if err := json.Unmarshal(data, &r); err != nil {
+		return r, "", fmt.Errorf("GitHub's answer didn't make sense: %v", err)
+	}
+	return r, resp.Header.Get("ETag"), nil
 }
 
 func dispatch(id, workflow string, inputs map[string]string) error {
@@ -616,7 +695,7 @@ func updateAll(ids []string) (string, error) {
 			return "", fmt.Errorf("%s: %v", p.Name, err)
 		}
 		if !folderName.MatchString(folder) {
-			if !p.Own && folder == "payload" { // the Open MPC catalogue's layout: its own installer puts the files in place
+			if !p.Own && openMPCPackage(filepath.Join(dir, folder), folder) { // the Open MPC catalogue's layout: its own installer puts the files in place
 				j.say("  %s: skipped. It's packaged for the Open MPC Plugin Manager (files that go to several places on the MPC), so install and update it there", p.Name)
 				continue
 			}
@@ -756,6 +835,20 @@ func downloadAndUnzip(url, dir string) (string, error) {
 		return "", errors.New("the zip has no plugin folder")
 	}
 	return top, nil
+}
+
+// openMPCPackage: a zip made for the Open MPC Plugin Manager (payload/ and an install script, files for several
+// places on the MPC) rather than one folder for VST2 Plugins.
+func openMPCPackage(top, name string) bool {
+	if name == "payload" {
+		return true
+	}
+	for _, f := range []string{"payload", "install.sh", "pluginlist-entry.xml"} {
+		if _, err := os.Stat(filepath.Join(top, f)); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // ---------- RESTART MPC APP ----------
