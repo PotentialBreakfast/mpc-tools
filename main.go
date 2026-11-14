@@ -57,7 +57,7 @@ func validHostName(h string) bool {
 
 const appTitle = "MPC TOOLS"
 
-const appVersion = "1.5.8"
+const appVersion = "1.5.9"
 
 var (
 	host        = "" // the MPC's address: set on the first-run screen (Find MPC), saved in %AppData%\MPC TOOLS\settings.ini

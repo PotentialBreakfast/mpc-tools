@@ -115,6 +115,20 @@
   <div class="warn" id="ferr"></div>
 </div>
 
+<div class="card">
+  <div class="head">
+    <h2>Drum one-shots</h2>
+    <span class="sub">Every drum and percussion hit on the MPC's drives, in one folder on the SD card</span>
+  </div>
+  <div class="row">
+    <button class="big go" id="drums">MAKE DRUM FOLDER</button>
+    <div class="sub" style="max-width:640px">Looks through every sample on the MPC (USB, SD card and the MPC's own storage) and copies the drum and
+      percussion one-shots to <b>DRUM ONE SHOTS</b> on the SD card, sorted into Kicks, Snares, Claps, Hats, Cymbals, Toms and Percs.
+      Basses, chords, melodic sounds and loops are left out. Your samples aren't moved or changed.
+      Tap it again after adding samples: only new ones are checked. Progress shows in the box above.</div>
+  </div>
+</div>
+
 <div id="overlay"><div class="dlg" id="dlg"></div></div>
 
 <script>
@@ -153,7 +167,7 @@
   }
 
   // ---- jobs ----
-  function busy(on) { ['update', 'restart', 'test', 'savef'].forEach(function (id) { $(id).disabled = on; }); if (on) $('record').disabled = true; }
+  function busy(on) { ['update', 'restart', 'test', 'savef', 'drums'].forEach(function (id) { $(id).disabled = on; }); if (on) $('record').disabled = true; }
   function run(url, body) {
     var opt = { method: 'POST' };
     if (body) { opt.body = JSON.stringify(body); opt.headers = { 'Content-Type': 'application/json' }; }
@@ -191,6 +205,7 @@
     }).join('');
   }
   $('update').onclick = function () { run('/api/plugins/update'); };
+  $('drums').onclick = function () { window.scrollTo(0, $('log').getBoundingClientRect().top + window.scrollY - 120); run('/api/drums/make'); };
   $('restart').onclick = function () {
     overlay('<h2>Restart the MPC app?</h2><p>The MPC app closes and opens again, so the new plugin versions load. ' +
       '<b>An unsaved project is lost: save it first.</b></p><div class="row"><button class="big go" id="yes">RESTART NOW</button>' +

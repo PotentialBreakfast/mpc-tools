@@ -1369,6 +1369,7 @@ func registerPlugins(mux *http.ServeMux) {
 		}
 		w.WriteHeader(204)
 	}
+	addDrumRoutes(mux, startJob) // DRUM ONE SHOTS (drums.go)
 	mux.HandleFunc("/api/plugins/update", func(w http.ResponseWriter, r *http.Request) {
 		touch()
 		if !postOnly(w, r) {

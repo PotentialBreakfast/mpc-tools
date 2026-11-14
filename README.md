@@ -8,6 +8,7 @@
 - 🗂️ **PC Folders**: your PC's folders appear *inside the MPC's own browser*, with no copying (MPC Link built in).
 - ⏺️ **Save last 60 s**: jamming and something good just happened? One click saves the last minute of the MPC's output as a WAV.
 - 🎛️ **Plugins**: the PotentialSuite plugins on your MPC (Bleed, Breaks, Crates, Grit, Heat, Kits, Noise, Patina, Punch, Warp and Wax). See which version each is on, **update them all** in one tap, **restart the MPC app**, **test** them (CPU bench and load test) and **record** the result on GitHub, make a **new version**, and set the **folders** PotentialBreaks and PotentialWax look in.
+- 🥁 **Drum one-shots**: one tap looks through every sample on the MPC (USB, SD card and its own storage) and copies the drum and percussion one-shots to **DRUM ONE SHOTS** on the SD card, sorted into Kicks, Snares, Claps, Hats, Cymbals, Toms and Percs. Basses, chords, melodic sounds and loops are left out. It runs on the MPC itself; tap again later and only new samples are checked.
 
 One click to open, nothing to type. Made by **PotentialBreaks** for my own setup, and shared free.
 
@@ -86,6 +87,7 @@ Click **OBS** in MPC TOOLS for the link (`http://localhost:6721/obs`). In OBS: *
 - **Tested on one MPC:** an MPC One running HAKAI 3.10. Other standalone MPCs should work if their addins do, but I haven't tried them. [Tell me](../../issues/new/choose) how it goes on yours.
 - **Rec and Overdub don't light up** on the Remote tab, because the MPC doesn't report them. Play and Stop do. ([Reported upstream](https://github.com/jacob-sabella/mpc-addin-remote/issues).)
 - **MPC One button notes are from a published table**, not measured on every model. The first time the Remote tab opens, MPC TOOLS adds them to `/data/mpc-addins/remote/buttons.conf` on the MPC (only names that aren't there yet). If a button presses the wrong thing, fix its number there (`NAME=note`).
+- **Drum one-shots is a best guess.** A sound's name ("kick", "conga", "bass", "loop" ...) counts most; a sound with no drum word in its name has to sound like a hit (fast start, dies away, no held note). On a mixed test library it kept about 93% of the drums and left out about 92% of the melodic sounds. Copies are named "<pack> - <file>", so you can see where each came from. It stops before the SD card has less than 300 MB free.
 - **PC Folders only shows while your PC is on** and MPC TOOLS is open. It's a live link, not a copy.
 - **Not alongside the separate MPC Link app.** If MPC Link is running, the PC Folders tab steps aside.
 - **Unsigned app**, so expect the Windows warning described above.
