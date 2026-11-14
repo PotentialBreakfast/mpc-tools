@@ -9,52 +9,111 @@
   :root { --bg:#141518; --panel:#1e2024; --line:#2c2f35; --text:#e6e6e6; --dim:#8a8f98; --amber:#f2a33a; --red:#e5484d; --green:#3fb950; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui, "Segoe UI", sans-serif;
-         display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px; min-height:100vh; }
+         display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px; min-height:100vh; }
   h1 { margin:0; font-size:15px; font-weight:600; letter-spacing:.08em; color:var(--dim); text-transform:uppercase; }
+  #main { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:flex-start; width:100%; }
+  #left { display:flex; flex-direction:column; align-items:center; gap:12px; }
   #screenBox { position:relative; background:#000; border:1px solid var(--line); border-radius:10px; overflow:hidden;
                max-width:min(100%, 1000px); line-height:0; }
   #screen { display:block; max-width:100%; height:auto; cursor:pointer; user-select:none; -webkit-user-drag:none; }
   #noScreen { display:none; padding:40px 30px; line-height:1.5; color:var(--dim); text-align:center; }
-  .bar { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .bar { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
   button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px;
-           min-width:120px; height:84px; font:600 17px system-ui, "Segoe UI", sans-serif; cursor:pointer;
-           display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+           min-width:104px; height:78px; font:600 16px system-ui, "Segoe UI", sans-serif; cursor:pointer;
+           display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:0 8px;
+           user-select:none; touch-action:manipulation; }
   button:hover { border-color:#4a4e57; }
   button:active { transform:translateY(1px); background:#26292e; }
-  button .ic { font-size:28px; line-height:1; }
-  #play .ic { color:var(--green); } #rec .ic { color:var(--red); } #stop .ic { color:var(--text); } #start .ic { color:var(--amber); }
+  button .ic { font-size:26px; line-height:1; }
+  #play .ic { color:var(--green); } #rec .ic, #overdub .ic { color:var(--red); } #stop .ic { color:var(--text); } #start .ic { color:var(--amber); }
   #play.on { border-color:var(--green); box-shadow:0 0 0 2px var(--green) inset; background:#17301f; }
   #stop.on { border-color:#6b707a; }
+  button.flash { border-color:var(--amber); box-shadow:0 0 0 2px var(--amber) inset; }
+  /* the side panel: the MPC's other buttons */
+  #pad { display:flex; flex-direction:column; gap:10px; background:#18191c; border:1px solid var(--line); border-radius:12px; padding:12px; }
+  #pad .grp { color:var(--dim); font-size:11px; letter-spacing:.08em; text-transform:uppercase; margin:2px 2px -4px; }
+  #pad .row { display:grid; grid-template-columns:repeat(4, 92px); gap:8px; }
+  #pad button { min-width:0; width:92px; height:60px; font-size:13px; border-radius:10px; }
+  #pad button .ic { font-size:20px; }
+  #shift.on { border-color:var(--amber); box-shadow:0 0 0 2px var(--amber) inset; background:#33270f; color:var(--amber); }
+  #status { min-height:22px; color:var(--dim); font-size:14px; text-align:center; }
+  #status.bad { color:var(--red); }
   #live { font-size:12px; color:var(--dim); }
   #live.ok { color:var(--green); }
-  button.flash { border-color:var(--amber); box-shadow:0 0 0 2px var(--amber) inset; }
-  #status { min-height:22px; color:var(--dim); font-size:14px; }
-  #status.bad { color:var(--red); }
   body.embedded h1 { display:none; }
-  body.embedded #screen { max-height:calc(100vh - 250px); width:auto; }
-  .hint { color:var(--dim); font-size:13px; text-align:center; max-width:640px; }
+  body.embedded #screen { max-height:calc(100vh - 210px); width:auto; }
+  .hint { color:var(--dim); font-size:13px; text-align:center; max-width:760px; }
   kbd { background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:0 5px; font-size:12px; }
 </style>
 </head>
 <body>
   <h1>MPC Remote Plus</h1>
 
-  <div id="screenBox">
-    <img id="screen" alt="MPC screen" draggable="false">
-    <div id="noScreen">Can't see the MPC screen.<br>Is the MPC switched on and on the network? Press F5 here to retry.</div>
-  </div>
+  <div id="main">
+    <div id="left">
+      <div id="screenBox">
+        <img id="screen" alt="MPC screen" draggable="false">
+        <div id="noScreen">Can't see the MPC screen.<br>Is the MPC switched on and on the network? Press F5 here to retry.</div>
+      </div>
+      <div class="bar">
+        <button id="start"   data-btn="PLAY-START" data-mmc="locate_start"  title="Play from the start (Home)"><span class="ic">⏮</span>Play Start</button>
+        <button id="play"    data-btn="PLAY"       data-mmc="play"          title="Play (Space toggles Play/Stop)"><span class="ic">▶</span>Play</button>
+        <button id="stop"    data-btn="STOP"       data-mmc="stop"          title="Stop"><span class="ic">■</span>Stop</button>
+        <button id="rec"     data-btn="REC"        data-mmc="record_strobe" title="Record (R)"><span class="ic">●</span>Rec</button>
+        <button id="overdub" data-btn="OVERDUB"                             title="Overdub (O)"><span class="ic">◉</span>Overdub</button>
+      </div>
+    </div>
 
-  <div class="bar">
-    <button id="start" data-mmc="locate_start" title="Back to the start (Home)"><span class="ic">⏮</span>Start</button>
-    <button id="play"  data-mmc="play"         title="Play (Space toggles Play/Stop)"><span class="ic">▶</span>Play</button>
-    <button id="stop"  data-mmc="stop"         title="Stop"><span class="ic">■</span>Stop</button>
-    <button id="rec"   data-mmc="record_strobe" title="Record (R)"><span class="ic">●</span>Rec</button>
+    <div id="pad">
+      <div class="grp">Main buttons</div>
+      <div class="row">
+        <button id="shift" title="Tap, then tap another button: that one is pressed with Shift held">Shift</button>
+        <button data-btn="MENU">Menu</button>
+        <button data-btn="MAIN">Main</button>
+        <button data-btn="BROWSE">Browse</button>
+        <button data-btn="UNDO">Undo</button>
+        <button data-btn="COPY">Copy</button>
+        <button data-btn="TAP-TEMPO">Tap Tempo</button>
+        <button data-btn="QLINK">Q-Link</button>
+      </div>
+      <div class="grp">Data wheel</div>
+      <div class="row">
+        <button data-dial="-5" title="Wheel left 5 (Shift+←)"><span class="ic">⏪</span>Left ×5</button>
+        <button data-dial="-1" title="Wheel left (←)"><span class="ic">◀</span>Left</button>
+        <button data-dial="1"  title="Wheel right (→)"><span class="ic">▶</span>Right</button>
+        <button data-dial="5"  title="Wheel right 5 (Shift+→)"><span class="ic">⏩</span>Right ×5</button>
+        <button data-btn="MINUS"><span class="ic">−</span>Minus</button>
+        <button data-btn="ENTER" title="Push the wheel"><span class="ic">⏺</span>Push</button>
+        <button data-btn="PLUS"><span class="ic">+</span>Plus</button>
+        <button data-btn="ERASE">Erase</button>
+      </div>
+      <div class="grp">Modes</div>
+      <div class="row">
+        <button data-btn="STEP-SEQ">Step Seq</button>
+        <button data-btn="TRACK-MUTE">Track Mute</button>
+        <button data-btn="NEXT-SEQ">Next Seq</button>
+        <button data-btn="SAMPLE-EDIT">Sample Edit</button>
+        <button data-btn="PROG-EDIT">Prog Edit</button>
+        <button data-btn="FULL-LEVEL">Full Level</button>
+        <button data-btn="16-LEVEL">16 Level</button>
+        <button data-btn="NOTE-REPEAT">Note Repeat</button>
+      </div>
+      <div class="grp">Pad banks</div>
+      <div class="row">
+        <button data-btn="BANK-A">Bank A</button>
+        <button data-btn="BANK-B">Bank B</button>
+        <button data-btn="BANK-C">Bank C</button>
+        <button data-btn="BANK-D">Bank D</button>
+      </div>
+    </div>
   </div>
 
   <div id="status"></div>
   <div id="live"></div>
-  <div class="hint">Tap the screen picture to touch the MPC screen. Play lights up when the MPC is playing, from here or from its own buttons. Keys: <kbd>Space</kbd> play/stop · <kbd>Home</kbd> start · <kbd>R</kbd> record.<br>
-  MPC settings (Preferences → MIDI / Sync): input <b>MPC Remote Out</b> on (Global), <b>Receive MMC</b> on; output <b>MPC Remote In</b> on, Sync send <b>MIDI Clock</b>.</div>
+  <div class="hint">Every button here presses the MPC's own button, so no MIDI settings are needed. Tap <b>Shift</b> once, then the next button (or a tap on the screen) gets Shift with it.
+  Tap the screen picture to touch the MPC screen.<br>
+  Keys: <kbd>Space</kbd> play/stop · <kbd>Home</kbd> play start · <kbd>R</kbd> rec · <kbd>O</kbd> overdub · <kbd>M</kbd> menu · <kbd>←</kbd> <kbd>→</kbd> data wheel.<br>
+  For the Play light to follow the MPC: Preferences → MIDI / Sync, output <b>MPC Remote In</b> on, Sync send <b>MIDI Clock</b>.</div>
 
 <script>
   if (window.top !== window) document.body.classList.add('embedded');
@@ -84,12 +143,92 @@
       .then(function () { return ''; });
   }
 
-  // Send an MMC transport command into MPC (needs Receive MMC on in the MPC).
-  function mmc(cmd, label) {
-    return call('send_midi', { type: 'mmc', mmc: cmd })
-      .then(function () { say('Sent ' + label); })
-      .catch(function () { say("Can't reach the MPC. Is it switched on and on the network?", true); });
+  // ---- the MPC's hardware buttons, pressed through the Remote addin ----
+  function hw(path, query) {
+    if (!VIA_HELPER) return fetch(BASE + '/' + path + '?' + query, { mode: 'no-cors' }).then(function () { return ''; });
+    return fetch('/hw/' + path + '?' + query, { cache: 'no-store' }).then(function (r) {
+      return r.text().then(function (t) {
+        if (!r.ok) { var e = new Error(t || ('MPC answered ' + r.status)); e.status = r.status; throw e; }
+        return t;
+      });
+    });
   }
+
+  // The MPC One has no built-in button list in the addin: MPC TOOLS adds one (only the names that are missing).
+  var setupDone = false;
+  function setupButtons() {
+    setupDone = true;
+    return fetch('/api/buttonprofile', { method: 'POST' }).then(function (r) {
+      return r.text().then(function (t) { if (!r.ok) throw new Error(t); return t; });
+    });
+  }
+  if (VIA_HELPER)
+    hw('buttons', '').then(function (t) {
+      var list = []; try { list = JSON.parse(t); } catch (e) {}
+      if (list.indexOf('PLAY') < 0 || list.indexOf('MENU') < 0)
+        return setupButtons().then(function () { say('Set up the MPC One buttons'); });
+    }).catch(function () {});   // MPC not there yet: a press tries again
+
+  var shiftOn = false, shiftEl = document.getElementById('shift');
+  function setShift(on) { shiftOn = on; shiftEl.classList.toggle('on', on); }
+  shiftEl.addEventListener('click', function () { setShift(!shiftOn); });
+
+  // Run fn with Shift held on the MPC when Shift is lit here, then let go of Shift.
+  function withShift(fn) {
+    if (!shiftOn) return fn();
+    setShift(false);
+    return hw('button', 'name=SHIFT&action=down').then(fn).then(function (v) {
+      return hw('button', 'name=SHIFT&action=up').then(function () { return v; });
+    }, function (e) {
+      return hw('button', 'name=SHIFT&action=up').catch(function () {}).then(function () { throw e; });
+    });
+  }
+
+  function sendButton(name) {
+    return hw('button', 'name=' + encodeURIComponent(name)).catch(function (e) {
+      if (e.status === 409 && /No button called/.test(e.message) && !setupDone)
+        return setupButtons().then(function () { return hw('button', 'name=' + encodeURIComponent(name)); });
+      throw e;
+    });
+  }
+
+  function flash(btn) {
+    btn.classList.add('flash');
+    setTimeout(function () { btn.classList.remove('flash'); }, 180);
+  }
+
+  function label(btn) { return btn.lastChild.textContent.trim(); }
+
+  function press(btn) {
+    flash(btn);
+    var name = btn.getAttribute('data-btn'), mmc = btn.getAttribute('data-mmc'), shifted = shiftOn;
+    if (name === 'PLAY' || name === 'PLAY-START') showState(true);
+    if (name === 'STOP') showState(false);
+    withShift(function () { return sendButton(name); })
+      .then(function () { say((shifted ? 'Shift + ' : '') + label(btn)); })
+      .catch(function (e) {
+        // the old way for transport: MMC (needs Receive MMC on in the MPC)
+        if (mmc && !shifted)
+          return call('send_midi', { type: 'mmc', mmc: mmc }).then(function () { say('Sent ' + label(btn) + ' (MMC)'); });
+        throw e;
+      })
+      .catch(function (e) {
+        say(e && e.status === 409 ? e.message : "Can't reach the MPC. Is it switched on and on the network?", true);
+      });
+  }
+
+  function dial(btn, delta) {
+    flash(btn);
+    withShift(function () { return hw('dial', 'delta=' + delta); })
+      .catch(function (e) { say(e && e.status === 409 ? e.message : "Can't reach the MPC. Is it switched on?", true); });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('button[data-btn]'), function (b) {
+    b.addEventListener('click', function () { press(b); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('button[data-dial]'), function (b) {
+    b.addEventListener('click', function () { dial(b, parseInt(b.getAttribute('data-dial'), 10)); });
+  });
 
   function showState(p) {
     playing = p;
@@ -119,24 +258,19 @@
   if (VIA_HELPER) poll();
   else liveEl.textContent = '';
 
-  function press(btn) {
-    btn.classList.add('flash');
-    setTimeout(function () { btn.classList.remove('flash'); }, 180);
-    var cmd = btn.getAttribute('data-mmc');
-    if (cmd === 'play') showState(true);
-    if (cmd === 'stop') showState(false);
-    mmc(cmd, btn.lastChild.textContent.trim());
-  }
-
-  Array.prototype.forEach.call(document.querySelectorAll('button[data-mmc]'), function (b) {
-    b.addEventListener('click', function () { press(b); });
-  });
-
+  function byBtn(n) { return document.querySelector('button[data-btn="' + n + '"]'); }
   document.addEventListener('keydown', function (e) {
-    if (e.repeat) return;
+    if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
     if (e.code === 'Space') { e.preventDefault(); press(document.getElementById(playing ? 'stop' : 'play')); }
     else if (e.code === 'Home') { e.preventDefault(); press(document.getElementById('start')); }
-    else if (e.key === 'r' || e.key === 'R') { press(document.getElementById('rec')); }
+    else if (e.key === 'r' || e.key === 'R') press(document.getElementById('rec'));
+    else if (e.key === 'o' || e.key === 'O') press(document.getElementById('overdub'));
+    else if (e.key === 'm' || e.key === 'M') press(byBtn('MENU'));
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      var d = (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 5 : 1);
+      dial(document.querySelector('button[data-dial="' + d + '"]'), d);
+    }
   });
 
   // Live screen + tap-to-touch (coordinates in full-size screen pixels).
@@ -150,7 +284,7 @@
     if (!img.naturalWidth || !r.width) return;
     var x = Math.round((e.clientX - r.left) * img.naturalWidth / r.width);
     var y = Math.round((e.clientY - r.top) * img.naturalHeight / r.height);
-    fetch(BASE + '/tap?x=' + x + '&y=' + y, { mode: 'no-cors' })
+    withShift(function () { return fetch(BASE + '/tap?x=' + x + '&y=' + y, { mode: 'no-cors' }); })
       .catch(function () { say("Can't reach the MPC. Is it switched on?", true); });
   });
 </script>

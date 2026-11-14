@@ -57,7 +57,7 @@ func validHostName(h string) bool {
 
 const appTitle = "MPC TOOLS"
 
-const appVersion = "1.5.7"
+const appVersion = "1.5.8"
 
 var (
 	host        = "" // the MPC's address: set on the first-run screen (Find MPC), saved in %AppData%\MPC TOOLS\settings.ini
@@ -572,6 +572,7 @@ func main() {
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
 	})
+	addButtonRoutes(mux, touch) // the Remote tab's hardware buttons (buttons.go)
 	// first-run / change MPC: find MPCs on the network, save the chosen address, reconnect everything
 	mux.HandleFunc("/api/discover", func(w http.ResponseWriter, r *http.Request) {
 		touch()

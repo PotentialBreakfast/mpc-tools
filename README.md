@@ -2,7 +2,7 @@
 
 **A second-screen dashboard for your Akai MPC.** One small Windows app with everything you want on the screen next to your MPC:
 
-- 🖥️ **Remote**: your MPC's screen live on your PC. Click to touch it, with Start / Play / Stop / Rec buttons.
+- 🖥️ **Remote**: your MPC's screen live on your PC. Click to touch it, and press the MPC's own buttons from the PC: transport (Play Start, Play, Stop, Rec, Overdub), Shift, Menu, Main, Browse, the data wheel, modes and pad banks.
 - 🎥 **OBS**: send the MPC screen into OBS with one link, for streaming or recording tutorials.
 - 📁 **File Browser**: drag files between your PC and the MPC's drives.
 - 🗂️ **PC Folders**: your PC's folders appear *inside the MPC's own browser*, with no copying (MPC Link built in).
@@ -49,7 +49,7 @@ MPC TOOLS is a dashboard: it connects to small helper programs ("addins") that r
 | What | Which tab uses it | Why it's needed | How to get it |
 |---|---|---|---|
 | **SSH access as root, without a password prompt** | All | MPC TOOLS connects in the background, so it can't stop to ask for a password | MPCs running HAKAI firmware or set up with [Open MPC](https://open-mpc.github.io/) usually allow this. If yours asks for a password, see [SSH key setup](#ssh-key-setup) |
-| **[MPC Remote addin](https://github.com/jacob-sabella/mpc-addin-remote)** by Jacob Sabella | Remote, OBS | Captures the MPC's screen and touch, and sends Play / Stop / Rec | Follow its README, or use the **Addins** tab of the [MPC Plugin Installer](https://open-mpc.github.io/) if it's listed there. **HAKAI users:** see [the HAKAI note](#hakai-firmware-note) |
+| **[MPC Remote addin](https://github.com/jacob-sabella/mpc-addin-remote)** by Jacob Sabella | Remote, OBS | Captures the MPC's screen and touch, and presses the MPC's hardware buttons | Follow its README, or use the **Addins** tab of the [MPC Plugin Installer](https://open-mpc.github.io/) if it's listed there. **HAKAI users:** see [the HAKAI note](#hakai-firmware-note) |
 | **[MPC File Browser addin](https://github.com/jacob-sabella/mpc-addin-filebrowser)** by Jacob Sabella | File Browser | A web file manager running on the MPC | Follow its README. Log in with the username and password it gives (change them after) |
 | **[MPC Skipback addin](https://github.com/sd88me/mpc-addin-skipback)** by sd88me | Save last 60 s | Always keeps the last minute of the MPC's output, ready to save | Follow its README, or the [MPC Plugin Installer](https://open-mpc.github.io/)'s Addins tab |
 | *Nothing to install* | PC Folders | [MPC Link](https://github.com/padbangers/mpc-link) by Padbangers is **built into** MPC TOOLS. The first time, it copies one small program (`sshfs`) to the MPC by itself | – |
@@ -85,7 +85,7 @@ Click **OBS** in MPC TOOLS for the link (`http://localhost:6721/obs`). In OBS: *
 - **Windows only**, for now.
 - **Tested on one MPC:** an MPC One running HAKAI 3.10. Other standalone MPCs should work if their addins do, but I haven't tried them. [Tell me](../../issues/new/choose) how it goes on yours.
 - **Rec and Overdub don't light up** on the Remote tab, because the MPC doesn't report them. Play and Stop do. ([Reported upstream](https://github.com/jacob-sabella/mpc-addin-remote/issues).)
-- **No MPC One hardware buttons in Remote.** Pressing the MPC One's own buttons from the PC isn't possible with the current Remote addin. The on-screen Start / Play / Stop / Rec buttons work.
+- **MPC One button notes are from a published table**, not measured on every model. The first time the Remote tab opens, MPC TOOLS adds them to `/data/mpc-addins/remote/buttons.conf` on the MPC (only names that aren't there yet). If a button presses the wrong thing, fix its number there (`NAME=note`).
 - **PC Folders only shows while your PC is on** and MPC TOOLS is open. It's a live link, not a copy.
 - **Not alongside the separate MPC Link app.** If MPC Link is running, the PC Folders tab steps aside.
 - **Unsigned app**, so expect the Windows warning described above.
