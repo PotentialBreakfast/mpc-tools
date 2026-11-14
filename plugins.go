@@ -47,7 +47,8 @@ type plugin struct {
 }
 
 var suite = []plugin{
-	{ID: "potentialbreaks", Name: "PotentialBreaks"}, {ID: "potentialheat", Name: "PotentialHeat"},
+	{ID: "potentialbreaks", Name: "PotentialBreaks"}, {ID: "potentialcrates", Name: "PotentialCrates"},
+	{ID: "potentialheat", Name: "PotentialHeat"},
 	{ID: "potentialnoise", Name: "PotentialNoise"}, {ID: "potentialpatina", Name: "PotentialPatina"},
 	{ID: "potentialpunch", Name: "PotentialPunch"}, {ID: "potentialwarp", Name: "PotentialWarp"},
 	{ID: "potentialwax", Name: "PotentialWax"},
@@ -99,7 +100,22 @@ func updateExtra(id string, fn func(*plugin)) {
 	}
 }
 
-func allPlugins() []plugin { return append(append([]plugin(nil), suite...), loadExtras()...) }
+// allPlugins: the PotentialSuite, then the added plugins (one added before it joined the suite shows once, as the suite's).
+func allPlugins() []plugin {
+	all := append([]plugin(nil), suite...)
+	for _, p := range loadExtras() {
+		dup := false
+		for _, q := range suite {
+			if strings.EqualFold(p.Repo, q.Repo) {
+				dup = true
+			}
+		}
+		if !dup {
+			all = append(all, p)
+		}
+	}
+	return all
+}
 
 func pluginByID(id string) (plugin, bool) {
 	for _, p := range allPlugins() {
