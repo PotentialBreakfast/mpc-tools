@@ -129,6 +129,41 @@ Everything for the PotentialSuite plugins, with no PowerShell lines to paste:
 
 RECORD ON GITHUB and NEW VERSION need MPC TOOLS connected to GitHub once: tap **GitHub** on the tab and follow the four steps (a fine-grained token with **Actions: Read and write**). The token is kept in MPC TOOLS' settings on your PC only. The same two jobs are buttons on each plugin's GitHub page too (Actions → **New version** / **Mark tested** → Run workflow).
 
+### What the backup covers, and how to restore it
+
+UPDATE and UPDATE ALL write to your MPC: they replace plugin folders in `VST2 Plugins`. Before a folder is replaced, the old one is moved, whole, into a backup folder on the same drive.
+
+**What is backed up**
+
+- The complete old folder of each plugin being updated, including its skins and any files you added to it.
+- Old copies of the same plugin found elsewhere: in a `Synths` folder, or in `VST2 Plugins` on another drive. These are moved out so the MPC only loads the new one.
+
+**What is not backed up**
+
+- Projects, samples, kits, expansions, MPC settings and the firmware. MPC TOOLS does not touch them, so they are not copied.
+- Plugins that are not being updated.
+- A plugin installed for the first time. There is no old copy, so no backup folder is made.
+
+**Where it goes**
+
+A folder named `Potential-backup-<date>-<time>` at the top of the drive that holds `VST2 Plugins`. Inside, each old plugin sits under the path it came from, for example:
+
+`Potential-backup-20261114-1530/<drive name>/VST2 Plugins/<Maker> - VST - <Name>`
+
+MPC TOOLS shows the folder's name when the update finishes. Backups are never deleted for you: delete the folder yourself once the new versions work.
+
+**What carries over by itself**
+
+Your own files listed by the plugin (for example `channels.txt`) and the look you chose are copied from the old folder into the new one, so you don't need the backup to keep them.
+
+**How to restore an old version**
+
+1. Save your project.
+2. In `VST2 Plugins`, delete the plugin's new folder (or move it somewhere else).
+3. Move the plugin's old folder from the backup folder back into `VST2 Plugins`. You can do this over SSH, or with the MPC's drive plugged into your computer.
+4. Tap **RESTART MPC APP** so the MPC loads it.
+
+There is no restore button yet. MPC TOOLS will offer the update again next time, because the newest release is still newer than what you put back.
 ### Add anyone's plugin (1.5.0)
 
 The Plugins tab isn't only for the PotentialSuite. Tap **+ ADD A PLUGIN**, copy the plugin's GitHub page address and tap **PASTE**. It joins the list, and then:
