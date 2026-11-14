@@ -788,14 +788,32 @@ func updateAll(ids []string) (string, error) {
 	sb.WriteString("D=" + shq(info.Drive) + "\nV=\"$D/VST2 Plugins\"\nS=" + shq(stage) + "\n")
 	sb.WriteString(`B="$D/Potential-backup-$(date +%Y%m%d-%H%M)"
 moved=0
+# keep <old folder> <new folder>: carry the user's own files (the package's "user_data" list, e.g. channels.txt)
+# and the look they chose (Plugin Skins/ui.txt, with that look's screen files put in place) into the new copy
+keep() {
+  o="$1"; n="$2"
+  tr -d '\n' < "$n/mpc-plugin.json" 2>/dev/null | sed -n 's/.*"user_data": *\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | sed 's/^ *"//; s/" *$//' | while IFS= read -r f || [ -n "$f" ]; do
+    case "$f" in ''|/*|*..*) continue;; esac
+    if [ -e "$o/$f" ]; then rm -rf "$n/$f"; mkdir -p "$(dirname "$n/$f")"; cp -a "$o/$f" "$n/$f" && echo "kept your $f: $(basename "$n")"; fi
+  done
+  l=$(head -n 1 "$o/Plugin Skins/ui.txt" 2>/dev/null | tr -d '\r\n ')
+  case "$l" in ''|*/*|*..*) return;; esac
+  [ -f "$n/Plugin Skins/$l/TUI.json" ] || return
+  for f in TUI.json Q-Links.json "Q-Links - 8by1.json"; do
+    [ -f "$n/Plugin Skins/$l/$f" ] && cp "$n/Plugin Skins/$l/$f" "$n/Plugin Skins/$f"
+  done
+  cp "$o/Plugin Skins/ui.txt" "$n/Plugin Skins/ui.txt" && echo "kept your look ($l): $(basename "$n")"
+}
 swap() {
   [ -d "$S/$1" ] || { echo "missing upload: $2"; return; }
-  if [ -d "$V/$2" ]; then k="${V#/}"; k="${k#media/}"; mkdir -p "$B/$k"; mv "$V/$2" "$B/$k/"; moved=1; fi
+  old=""
+  if [ -d "$V/$2" ]; then k="${V#/}"; k="${k#media/}"; mkdir -p "$B/$k"; mv "$V/$2" "$B/$k/"; moved=1; old="$B/$k/$2"; fi
   mv "$S/$1" "$V/$2"
   for s in /media/*/Synths /sdcard/Synths /media/*/"VST2 Plugins"; do
     [ "$s" = "$V" ] && continue
-    if [ -d "$s/$2" ]; then k="${s#/}"; k="${k#media/}"; mkdir -p "$B/$k"; mv "$s/$2" "$B/$k/"; moved=1; echo "old copy moved out of $s: $2"; fi
+    if [ -d "$s/$2" ]; then k="${s#/}"; k="${k#media/}"; mkdir -p "$B/$k"; mv "$s/$2" "$B/$k/"; moved=1; [ -n "$old" ] || old="$B/$k/$2"; echo "old copy moved out of $s: $2"; fi
   done
+  [ -n "$old" ] && keep "$old" "$V/$2"
   v=$(sed -n 's/.*"version": *"\([0-9.]*\)".*/\1/p' "$V/$2/plugin.json" "$V/$2/mpc-plugin.json" 2>/dev/null | head -n 1)
   echo "installed: $2 $v"
 }
