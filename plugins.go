@@ -338,12 +338,49 @@ func ghDo(method, path string, body any, out any) (int, error) {
 	return resp.StatusCode, nil
 }
 
+type asset struct {
+	Name string `json:"name"`
+	URL  string `json:"browser_download_url"`
+}
+
 type release struct {
-	Tag    string `json:"tag_name"`
-	Assets []struct {
-		Name string `json:"name"`
-		URL  string `json:"browser_download_url"`
-	} `json:"assets"`
+	Tag    string  `json:"tag_name"`
+	Assets []asset `json:"assets"`
+}
+
+// webLatest: a PotentialSuite plugin's newest release from GitHub's web page instead of its API. The page answers
+// /releases/latest with a redirect to /releases/tag/<tag>, and has no 60-an-hour limit for apps without a login. The
+// suite's release files are always named <Name>-<version>-mpc-sdk.zip, so the download address follows from the tag.
+var webClient = &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+
+func webLatest(p plugin) (release, error) {
+	var r release
+	req, err := http.NewRequest("HEAD", "https://github.com/"+p.Repo+"/releases/latest", nil)
+	if err != nil {
+		return r, err
+	}
+	req.Header.Set("User-Agent", "MPC-TOOLS/"+appVersion)
+	resp, err := webClient.Do(req)
+	if err != nil {
+		return r, err
+	}
+	resp.Body.Close()
+	loc := resp.Header.Get("Location")
+	i := strings.Index(loc, "/releases/tag/")
+	if resp.StatusCode/100 != 3 || i < 0 {
+		return r, fmt.Errorf("GitHub's page gave no release (%d)", resp.StatusCode)
+	}
+	tag := loc[i+len("/releases/tag/"):]
+	if j := strings.IndexAny(tag, "?#"); j >= 0 {
+		tag = tag[:j]
+	}
+	if tag == "" || strings.ContainsAny(tag, "/ ") {
+		return r, errors.New("GitHub's page gave an odd release name")
+	}
+	name := p.Name + "-" + tagVersion(tag) + "-mpc-sdk.zip"
+	r.Tag = tag
+	r.Assets = []asset{{Name: name, URL: "https://github.com/" + p.Repo + "/releases/download/" + tag + "/" + name}}
+	return r, nil
 }
 
 var (
@@ -375,7 +412,17 @@ func latestReleases(fresh bool) (map[string]release, error) {
 			mu.Lock()
 			old, have := disk[p.Repo]
 			mu.Unlock()
-			r, etag, err := ghLatest(p.Repo, old.ETag)
+			var r release
+			var etag string
+			var err error
+			if p.Own && os.Getenv("MPCTOOLS_GH_API") == "" { // the suite: GitHub's web page, no hourly limit
+				if r, err = webLatest(p); err == nil {
+					etag = old.ETag
+				}
+			}
+			if !p.Own || err != nil || r.Tag == "" {
+				r, etag, err = ghLatest(p.Repo, old.ETag)
+			}
 			mu.Lock()
 			defer mu.Unlock()
 			switch {
