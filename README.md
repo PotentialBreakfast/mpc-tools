@@ -7,7 +7,7 @@
 - 📁 **File Browser**: drag files between your PC and the MPC's drives.
 - 🗂️ **PC Folders**: your PC's folders appear *inside the MPC's own browser*, with no copying (MPC Link built in).
 - ⏺️ **Save last 60 s**: jamming and something good just happened? One click saves the last minute of the MPC's output as a WAV.
-- 🎛️ **Plugins**: the PotentialSuite plugins on your MPC (Bleed, Breaks, Crates, Grit, Heat, Noise, Patina, Punch, Warp and Wax). See which version each is on, **update them all** in one tap, **restart the MPC app**, **test** them (CPU bench and load test) and **record** the result on GitHub, make a **new version**, and set the **folders** PotentialBreaks and PotentialWax look in.
+- 🎛️ **Plugins**: the PotentialSuite plugins on your MPC (Bleed, Breaks, Crates, Grit, Heat, Kits, Noise, Patina, Punch, Warp and Wax). See which version each is on, **update them all** in one tap, **restart the MPC app**, **test** them (CPU bench and load test) and **record** the result on GitHub, make a **new version**, and set the **folders** PotentialBreaks and PotentialWax look in.
 
 One click to open, nothing to type. Made by **PotentialBreaks** for my own setup, and shared free.
 
