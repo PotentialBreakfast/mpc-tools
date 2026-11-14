@@ -96,6 +96,17 @@ Click **OBS** in MPC TOOLS for the link (`http://localhost:6721/obs`). In OBS: *
 
 Everything stays between your PC and your MPC. MPC TOOLS has no accounts, no tracking and no internet connection of its own. Your MPC's address is saved in `%AppData%\MPC TOOLS\settings.ini`, and MPC Link's folder list in `%AppData%\MPC Link\config.json`. Its pages only listen on your own computer (`localhost`), so nobody else on your network can use them.
 
+## Security: SSH on your network
+
+MPC TOOLS reaches the MPC over **SSH as root**. That is the access a modded MPC (HAKAI, Open MPC) or the firmware's own user access mode already gives; MPC TOOLS doesn't open anything new on the MPC. Root access means full control of the MPC, so treat it with care:
+
+- **Keep the MPC on your home network.** Don't join public or shared Wi-Fi (a venue, a studio, a hotel) while SSH is on. Anyone on that network can try to log in.
+- **Use an SSH key, not a password**, and never an empty password. See [SSH key setup](#ssh-key-setup).
+- **Switch SSH off when you don't need it**, if your firmware lets you.
+- **Don't forward the MPC's SSH port** through your router to the internet.
+
+A separate, limited user isn't possible yet: updating plugins, restarting the MPC app and mounting your PC's folders all need root on the MPC.
+
 ---
 
 ## Firmware with "user access" (November 2026)
