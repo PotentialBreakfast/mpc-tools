@@ -47,6 +47,7 @@ type plugin struct {
 }
 
 var suite = []plugin{
+	{ID: "potential1200", Name: "Potential1200"},
 	{ID: "potentialbleed", Name: "PotentialBleed"}, {ID: "potentialbreaks", Name: "PotentialBreaks"},
 	{ID: "potentialcrates", Name: "PotentialCrates"}, {ID: "potentialgrit", Name: "PotentialGrit"},
 	{ID: "potentialheat", Name: "PotentialHeat"}, {ID: "potentialkits", Name: "PotentialKits"},
