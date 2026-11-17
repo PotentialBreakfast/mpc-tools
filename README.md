@@ -84,7 +84,7 @@ Click **OBS** in MPC TOOLS for the link (`http://localhost:6721/obs`). In OBS: *
 ## Things to know (limitations)
 
 - **Windows only**, for now.
-- **Tested on one MPC:** an MPC One running HAKAI 3.10. Other standalone MPCs should work if their addins do, but I haven't tried them. [Tell me](../../issues/new/choose) how it goes on yours.
+- **Tested on:** an MPC One running standard Akai firmware 3.10.1 and the latest HAKAI firmware (USB-boot method). Other standalone MPCs should work if their addins do, but I haven't tried them. [Tell me](../../issues/new/choose) how it goes on yours.
 - **Rec and Overdub don't light up** on the Remote tab, because the MPC doesn't report them. Play and Stop do. ([Reported upstream](https://github.com/jacob-sabella/mpc-addin-remote/issues).)
 - **MPC One button notes are from a published table**, not measured on every model. The first time the Remote tab opens, MPC TOOLS adds them to `/data/mpc-addins/remote/buttons.conf` on the MPC (only names that aren't there yet). If a button presses the wrong thing, fix its number there (`NAME=note`).
 - **Drum one-shots is a best guess.** A sound's name ("kick", "conga", "bass", "loop" ...) counts most; a sound with no drum word in its name has to sound like a hit (fast start, dies away, no held note). On a mixed test library it kept about 93% of the drums and left out about 92% of the melodic sounds. Copies are named "<pack> - <file>", so you can see where each came from. It stops before the SD card has less than 300 MB free.
