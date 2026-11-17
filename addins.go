@@ -42,7 +42,7 @@ func addinsScript(force bool) string {
 		`D=/run/systemd/system/acvs.service.d; mkdir -p $D; ` +
 		// stock firmware: also put back the app's own start command, in case a HAKAI launcher drop-in is picked up
 		// (its driver files are gone on the stock firmware). On HAKAI itself, its launcher stays in charge.
-		`if [ -e /usr/lib/hakai_driver.so ]; then printf '[Service]\nEnvironment=LD_PRELOAD=%s\n' "$L" > $D/99-mpc-tools-addins.conf; ` +
+		`if [ -e /usr/lib/hakai_driver.so ]; then H=/usr/bin/az01-launch-MPC; if [ -x "$H" ]; then mkdir -p /data/mpc-addins; C=/data/mpc-addins/az01-launch-MPC-addins; cp -f "$H" "$C"; chmod 755 "$C"; if [ -n "$L" ] && ! grep -q "$L" "$C"; then if grep -q 'CURSOR_SO' "$C"; then sed -i "s|\\$CURSOR_SO|\\$CURSOR_SO:$L|" "$C"; else sed -i "s|LD_PRELOAD=|LD_PRELOAD=$L:|" "$C"; fi; fi; printf '[Service]\nExecStart=\nExecStart=%s\n' "$C" > $D/99-mpc-tools-addins.conf; else printf '[Service]\nEnvironment=LD_PRELOAD=%s\n' "$L" > $D/99-mpc-tools-addins.conf; fi; ` +
 		`else E=$(grep '^ExecStart=' $(systemctl show acvs -p FragmentPath --value) | tail -n 1); ` +
 		`printf '[Service]\nExecStart=\n%s\nEnvironment=LD_PRELOAD=%s\n' "$E" "$L" > $D/99-mpc-tools-addins.conf; fi; ` +
 		`systemctl daemon-reload; systemctl restart acvs; ` +

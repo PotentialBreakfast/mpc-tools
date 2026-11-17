@@ -189,7 +189,7 @@ irm https://raw.githubusercontent.com/PotentialBreakfast/mpc-tools/main/scripts/
 
 ## HAKAI firmware note
 
-On HAKAI, MPC addins can fail to load, because HAKAI's start-up script replaces the setting addins use to load (`LD_PRELOAD`). Symptom: the Remote tab says the connection was refused. The workaround is described in [this MPC Remote issue](https://github.com/jacob-sabella/mpc-addin-remote/issues).
+On HAKAI, MPC addins can fail to load, because HAKAI's start-up script replaces the setting addins use to load (`LD_PRELOAD`). Symptom: the Remote tab says the connection was refused. From 1.5.11, MPC TOOLS applies the workaround from [this MPC Remote issue](https://github.com/jacob-sabella/mpc-addin-remote/issues/7) itself: on HAKAI it copies `/usr/bin/az01-launch-MPC` to `/data/mpc-addins/az01-launch-MPC-addins`, adds the addins to its `LD_PRELOAD`, and starts the MPC app through that copy. Nothing on the MPC is changed for good.
 
 ## SSH key setup
 
