@@ -8,6 +8,10 @@ MPC TOOLS includes code and programs from these projects, each under its own lic
 ## sshfs, libfuse, GLib – GPL-2.0 / LGPL-2.1
 `linkcore/device/sshfs` is the unmodified sshfs 3.7.3 binary for 32-bit ARM from MPC Link. MPC TOOLS copies it to the MPC as a separate program. The source code and build script are listed in [`linkcore/device/README.md`](linkcore/device/README.md): https://github.com/libfuse/sshfs/releases/tag/sshfs-3.7.3, https://github.com/libfuse/libfuse and https://gitlab.gnome.org/GNOME/glib.
 
+## Ableton Link – GPL-2.0-or-later
+
+`linkaudio/bin/linkaudio-rx.exe` and `linkaudio-rx-mac-*`, the MPC audio receiver, are built from `linkaudio/main.cpp` with the [Ableton Link SDK](https://github.com/Ableton/link) (commit `4f5be9939bd6d016758f021aa91f44440171ef2d`, with its bundled [asio](https://github.com/chriskohlhoff/asio), Boost Software License). The receiver is a separate program under the GNU GPL, version 2 or later: its licence is in [`linkaudio/COPYING.md`](linkaudio/COPYING.md), and its full source and build script are in [`linkaudio/`](linkaudio/). MPC TOOLS carries it inside, writes it to its cache folder and runs it, and they talk only through pipes, so the rest of MPC TOOLS stays MIT.
+
 ## dr_libs (David Reid) – public domain (Unlicense) or MIT-0
 
 `drumsort/vendor/dr_wav.h`, `dr_flac.h` and `dr_mp3.h` from https://github.com/mackron/dr_libs (commit in `drumsort/vendor/VENDORED.md`): reading WAV, AIFF, FLAC and MP3 in drumsort, the program the Drum one-shots button runs on the MPC. Built into `drumsort/bin/` by `drumsort/build.sh`.

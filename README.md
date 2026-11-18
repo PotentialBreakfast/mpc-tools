@@ -3,7 +3,8 @@
 **A second-screen dashboard for your Akai MPC.** One small Windows app with everything you want on the screen next to your MPC:
 
 - 🖥️ **Remote**: your MPC's screen live on your PC. Click to touch it, and press the MPC's own buttons from the PC: transport (Play Start, Play, Stop, Rec, Overdub), Shift, Menu, Main, Browse, the data wheel, modes and pad banks.
-- 🎥 **OBS**: send the MPC screen into OBS with one link, for streaming or recording tutorials.
+- 🎥 **OBS**: send the MPC screen into OBS with one link, for streaming or recording tutorials, now with the MPC's sound too.
+- 🔊 **MPC audio** *(new in 1.6.0)*: hear the MPC on your PC over the network, with one tap. It receives Ableton **Link Audio**, which HAKAI's **MPC LINK AUDIO** app sends. No Ableton needed.
 - 📁 **File Browser**: drag files between your PC and the MPC's drives.
 - 🗂️ **PC Folders**: your PC's folders appear *inside the MPC's own browser*, with no copying (MPC Link built in).
 - ⏺️ **Save last 60 s**: jamming and something good just happened? One click saves the last minute of the MPC's output as a WAV.
@@ -78,6 +79,18 @@ Already use the separate MPC Link app? Close it first (right-click its icon by t
 ### MPC screen in OBS
 
 Click **OBS** in MPC TOOLS for the link (`http://localhost:6721/obs`). In OBS: **Sources → + → Browser**, paste the link and set the size to **1280 × 800**. You get just the MPC screen, live, with no buttons or borders. Keep MPC TOOLS open while you stream. On slow Wi-Fi, add `?half=1` to the link.
+
+**Sound in OBS (1.6.0):** in the Browser source's settings tick **Control audio via OBS**. The MPC's sound then arrives with the picture as its own audio source in OBS (it needs MPC LINK AUDIO on, see below). For the picture only, add `?audio=0` to the link.
+
+### MPC audio (Link Audio)
+
+Tap **🔈 Audio** at the top right (or press **Ctrl+M**) to hear the MPC on your PC. It works from every tab and remembers it was on next time.
+
+On the MPC, open HAKAI's **MPC LINK AUDIO** app and turn it on. It sends the MPC's main mix over your network with Ableton Link Audio. MPC TOOLS finds it by itself: the button turns green with a level bar, and the sender's name shows beside it. If more than one Link Audio sender is on your network (Ableton Live, a second MPC), tap the name to switch.
+
+- The first time, **Windows Firewall** asks about **linkaudio-rx**: allow it on **private networks**, or no sound arrives.
+- Expect around a tenth of a second of delay, and less on a wired network.
+- MPC LINK AUDIO is a HAKAI app. Its authors call it untested on MPC hardware other than the Force; it works on an MPC One.
 
 ---
 
@@ -214,8 +227,12 @@ Each release is built from this source by GitHub Actions (`.github/workflows/rel
 ```
 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H=windowsgui -s -w" -o "MPC TOOLS.exe" .
 ```
+The audio receiver in `linkaudio/bin/` is built separately with `sh linkaudio/build.sh` (needs `pip install ziglang==0.17.0.post0`). See [`linkaudio/README.md`](linkaudio/README.md).
 
 ## Credits
+
+- **[Ableton Link](https://github.com/Ableton/link)** (GPL-2.0-or-later): the MPC audio receiver, `linkaudio-rx`, is built with it. It's a separate small program under `linkaudio/`, with its own licence. See [THIRD_PARTY.md](THIRD_PARTY.md).
+- **MPC LINK AUDIO**, HAKAI's clone of Force Link Audio by Mockba, Macdigi and Amit Talwar: sends the sound MPC TOOLS receives.
 
 - **[MPC Link](https://github.com/padbangers/mpc-link)** by Padbangers (MIT): built in as the PC Folders tab, under `linkcore/`, with its look and credit kept. MPC TOOLS adds a folder picker inside the page, because the Windows folder window could open behind other windows.
 - **[mpc-addin-remote](https://github.com/jacob-sabella/mpc-addin-remote)** and **[mpc-addin-filebrowser](https://github.com/jacob-sabella/mpc-addin-filebrowser)** by Jacob Sabella, and **[mpc-addin-skipback](https://github.com/sd88me/mpc-addin-skipback)** by sd88me: the addins MPC TOOLS talks to.

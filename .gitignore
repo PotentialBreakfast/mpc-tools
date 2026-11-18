@@ -3,3 +3,7 @@ dist/
 *.so
 *.o
 *.exe
+!linkaudio/bin/linkaudio-rx.exe
+linkaudio/.link-sdk/
+linkaudio/.win-shim/
+linkaudio/bin/linkaudio-rx-linux

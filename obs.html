@@ -11,6 +11,7 @@
 </style>
 </head>
 <body>
+<script src="/linkaudio.js"></script>
 <img id="s" alt="">
 <div id="wait">Waiting for the MPC screen…</div>
 <script>
@@ -23,6 +24,10 @@
   img.onerror = function () { wait.style.display = 'flex'; setTimeout(start, 2000); };
   start();
   setInterval(function () { if (!img.naturalWidth) start(); }, 5000);
+
+  // The MPC's sound with the picture (Link Audio, from HAKAI's MPC LINK AUDIO). In OBS tick "Control audio via
+  // OBS" in the Browser source so it becomes an audio source there. ?audio=0 for the picture only.
+  if (q.get('audio') !== '0') new MPCAudio().start();
 </script>
 </body>
 </html>

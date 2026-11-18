@@ -62,6 +62,20 @@
   .hbtn { align-self:center; margin:0 4px 10px 0; height:44px; padding:0 14px; background:var(--panel); color:var(--text);
           border:1px solid var(--line); border-radius:10px; cursor:pointer; font:600 14px system-ui, "Segoe UI", sans-serif; }
   .hbtn:hover { border-color:#4a4e57; }
+  /* MPC audio: one tap on/off; the bar shows the sound level, the dot whether sound is arriving */
+  #audiobtn { display:flex; align-items:center; gap:9px; padding:0 14px 0 12px; }
+  #audiobtn .spk { font-size:17px; line-height:1; }
+  #audiobtn .lvl { width:34px; height:8px; border-radius:4px; background:#2a2d33; overflow:hidden; display:none; }
+  #audiobtn .lvl i { display:block; height:100%; width:0; background:var(--green); transition:width .1s; }
+  #audiobtn.on { border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset; }
+  #audiobtn.on .lvl { display:block; }
+  #audiobtn.wait { border-color:var(--amber); }
+  #audiobtn.wait .spk { animation:blink 1s infinite; }
+  #audiobtn.err { border-color:var(--red); }
+  #audiomsg { align-self:center; margin:0 8px 10px 0; font-size:12px; color:var(--dim); max-width:230px; cursor:default;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #audiomsg.many { cursor:pointer; text-decoration:underline dotted; }
+  #audiomsg.err { color:var(--red); }
   #overlay { position:fixed; inset:0; background:rgba(10,11,13,.92); display:none; align-items:center; justify-content:center; z-index:10; }
   #overlay.show { display:flex; }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:28px 32px; width:min(620px, 92vw); }
@@ -87,6 +101,8 @@
   <button class="tab" data-t="link" title="Your PC's folders in the MPC's own browser (MPC Link)"><span class="pad"></span>PC Folders<span class="dot" id="dot-link"></span><span class="key">Ctrl+3</span></button>
   <button class="tab" data-t="plugins" title="Your Potential plugins: versions, update, test, folders"><span class="pad"></span>Plugins<span class="key">Ctrl+4</span></button>
   <div class="spacer"></div>
+  <div id="audiomsg"></div>
+  <button class="hbtn" id="audiobtn" title="Hear the MPC here (Link Audio from HAKAI's MPC LINK AUDIO). Ctrl+M"><span class="spk">🔈</span>Audio<span class="lvl"><i></i></span></button>
   <button class="hbtn" id="obsbtn" title="Show the MPC screen in OBS">OBS</button>
   <button class="hbtn" id="setbtn" title="Change which MPC to connect to">⚙</button>
   <div id="skipmsg"></div>
@@ -110,6 +126,7 @@
     <div class="msg" id="msg-link"></div>
   </section>
 </main>
+<script src="/linkaudio.js"></script>
 <script>
   var NAMES = { remote: 'MPC Remote', files: 'File Browser', link: 'PC Folders (MPC Link)' };
   var loaded = { remote: false, files: false, link: false };
@@ -247,12 +264,54 @@
       'It shows just the MPC screen, live, with nothing else. Keep MPC TOOLS open while streaming.</p>' +
       '<div class="obsurl" id="ou">' + u + '</div>' +
       '<div class="row"><button id="copy">Copy address</button><button id="open">Preview</button><button id="cancel">Close</button></div>' +
-      '<div class="small">Slow Wi-Fi? Add <b>?half=1</b> to the address. Smoother: <b>?fps=60</b>.</div>';
+      '<div class="small">Sound: tick <b>Control audio via OBS</b> in the Browser source, and the MPC\'s audio comes with the picture ' +
+      '(MPC LINK AUDIO on in HAKAI). Picture only: add <b>?audio=0</b>.<br>' +
+      'Slow Wi-Fi? Add <b>?half=1</b> to the address. Smoother: <b>?fps=60</b>.</div>';
     overlay.classList.add('show');
     document.getElementById('copy').onclick = function () { navigator.clipboard.writeText(u).then(function () { document.getElementById('copy').textContent = 'Copied ✓'; }); };
     document.getElementById('open').onclick = function () { window.open(u, '_blank', 'width=1280,height=800'); };
     document.getElementById('cancel').onclick = closeOverlay;
   };
+
+  // ---- MPC audio (Link Audio): one tap on/off, remembered for next time ----
+  var audioBtn = document.getElementById('audiobtn'), audioMsg = document.getElementById('audiomsg');
+  var audioLvl = audioBtn.querySelector('.lvl i'), audioSpk = audioBtn.querySelector('.spk');
+  var audioOn = false, audioSound = false, audioMany = false;
+  var player = new MPCAudio({ onState: function (st) {
+    audioSound = st.playing;
+    audioLvl.style.width = Math.min(100, Math.round(Math.sqrt(st.level || 0) * 100)) + '%';
+  } });
+  function remember(on) { try { localStorage.setItem('mpcAudio', on ? '1' : '0'); } catch (e) {} }
+  function setAudio(on) {
+    audioOn = on; remember(on);
+    if (on) player.start(); else player.stop();
+    audioSpk.textContent = on ? '🔊' : '🔈';
+    if (!on) { audioBtn.className = 'hbtn'; audioMsg.textContent = ''; audioMsg.className = ''; }
+  }
+  audioBtn.onclick = function () { setAudio(!audioOn); };
+  audioMsg.onclick = function () { // more than one sender: a tap goes to the next one
+    if (audioOn && audioMany) fetch('/api/audio/next', { method: 'POST' }).then(poll);
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); setAudio(!audioOn); }
+  });
+  function audioStatus(a) {
+    if (!a.available) { audioBtn.style.display = 'none'; return; }
+    if (!audioOn) return;
+    audioMany = a.channels > 1;
+    var cls = 'hbtn wait', text = '', mc = '';
+    if (a.state === 'error') { cls = 'hbtn err'; text = a.msg; mc = 'err'; }
+    else if (a.state === 'starting' || a.state === 'off') text = 'Starting…';
+    else if (a.state === 'searching')
+      text = a.peers > 0 ? 'Turn on MPC LINK AUDIO in HAKAI' : 'Looking for the MPC (Link)…';
+    else if (a.state === 'quiet') text = a.source + ': no sound arriving';
+    else if (a.state === 'on') { cls = audioSound ? 'hbtn on' : 'hbtn wait'; text = a.source; }
+    if (audioMany && (a.state === 'on' || a.state === 'quiet')) { text += '  ⇄'; mc = 'many'; }
+    audioBtn.className = cls;
+    audioMsg.textContent = text; audioMsg.className = mc;
+    audioMsg.title = audioMany ? 'Tap to listen to the next Link Audio sender' : text;
+  }
+  try { if (localStorage.getItem('mpcAudio') === '1') setAudio(true); } catch (e) {}
 
   var lastJSON = '';
   function poll() {
@@ -260,6 +319,7 @@
       var j = JSON.stringify(s);
       if (s.host === '' && !overlay.classList.contains('show')) setupScreen(true);
       curHost = s.host || '';
+      if (s.audio) audioStatus(s.audio);
       if (j !== lastJSON) { lastJSON = j; render('remote', s.remote); render('files', s.files); if (s.link) render('link', s.link); }
     }).catch(function () {});
   }

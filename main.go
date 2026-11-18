@@ -3,6 +3,7 @@
 //   - File Browser (jacob-sabella/mpc-addin-filebrowser, port 6760)
 //   - Folders      (MPC Link by Padbangers, built in): the PC's folders in the MPC's own browser
 //   - Save last 60 s (sd88me/mpc-addin-skipback)
+//   - MPC audio (Ableton Link Audio from HAKAI's MPC LINK AUDIO, received by linkaudio-rx): header button + OBS page
 //
 // Opens hidden SSH tunnels to the MPC, serves the tabbed page on localhost:6721 and shows it in its own app window
 // (Brave, else Chrome, else Edge, in app mode). Closing the window closes everything.
@@ -46,6 +47,9 @@ var obsPage []byte
 //go:embed plugins.html
 var pluginsPage []byte
 
+//go:embed linkaudio.js
+var linkAudioJS []byte
+
 func validHostName(h string) bool {
 	for _, c := range h {
 		if !(c == '.' || c == '-' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
@@ -57,7 +61,7 @@ func validHostName(h string) bool {
 
 const appTitle = "MPC TOOLS"
 
-const appVersion = "1.5.12"
+const appVersion = "1.6.0"
 
 var (
 	host        = "" // the MPC's address: set on the first-run screen (Find MPC), saved in %AppData%\MPC TOOLS\settings.ini
@@ -482,6 +486,10 @@ func main() {
 	link := startLinkTab(listen(6723))
 	defer link.stop()
 
+	// MPC audio (Link Audio): runs while the Audio button or the OBS page listens
+	audio := newLinkAudio()
+	defer audio.shutdown()
+
 	// --- the tabbed page ---
 	mux := http.NewServeMux()
 	page := func(b []byte) http.HandlerFunc {
@@ -510,7 +518,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		json.NewEncoder(w).Encode(map[string]any{"remote": remote.status(), "files": files.status(), "link": link.status(),
-			"host": getHost(), "version": appVersion})
+			"audio": audio.status(), "host": getHost(), "version": appVersion})
 	})
 	mux.HandleFunc("/api/loadaddins", func(w http.ResponseWriter, r *http.Request) { // the Remote tab's button
 		touch()
@@ -572,7 +580,8 @@ func main() {
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
 	})
-	addButtonRoutes(mux, touch) // the Remote tab's hardware buttons (buttons.go)
+	addButtonRoutes(mux, touch)       // the Remote tab's hardware buttons (buttons.go)
+	addAudioRoutes(mux, audio, touch) // MPC audio: /audio/stream, /api/audio/next, /linkaudio.js (linkaudio.go)
 	// first-run / change MPC: find MPCs on the network, save the chosen address, reconnect everything
 	mux.HandleFunc("/api/discover", func(w http.ResponseWriter, r *http.Request) {
 		touch()
@@ -687,6 +696,7 @@ func main() {
 		"--window-size=1200,1000",
 		"--no-first-run",
 		"--no-default-browser-check",
+		"--autoplay-policy=no-user-gesture-required", // MPC audio comes back on by itself if it was on
 		"--disable-features=Translate")
 	if err := win.Start(); err != nil {
 		fail("Couldn't open the window: " + err.Error())
