@@ -703,7 +703,9 @@ func newer(a, b string) bool {
 // ---------- UPDATE ALL ----------
 
 var folderName = regexp.MustCompile(`^[A-Za-z0-9 ._()&+-]+ - VST - [A-Za-z0-9 ._()&+-]+$`)
-var safeDrive = regexp.MustCompile(`^/media/[A-Za-z0-9_.-]+$`)
+// a drive under /media: letters, digits, spaces and . _ - ( ) (e.g. "/media/MPC SSD", a stick renamed for HAKAI). Every
+// script quotes it (shq / "$D"), and scp never sees it (it copies through a link in /tmp, see updateAll).
+var safeDrive = regexp.MustCompile(`^/media/[A-Za-z0-9_.()-][A-Za-z0-9_. ()-]*$`)
 
 func updateAll(ids []string) (string, error) {
 	j := job
@@ -776,12 +778,16 @@ func updateAll(ids []string) (string, error) {
 		return "Everything is up to date.", nil
 	}
 	stage := info.Drive + "/potential-update"
-	if _, err := mpcRun("rm -rf "+shq(stage)+"; mkdir -p "+shq(stage), 20*time.Second); err != nil {
+	// scp is given /tmp/potential-update, a link to the stage: a drive name with a space ("MPC SSD") would be split
+	// in two by the MPC's shell on the way in (older scp), so the drive name never goes through scp at all
+	const upload = "/tmp/potential-update"
+	if _, err := mpcRun("rm -rf "+shq(stage)+"; mkdir -p "+shq(stage)+" && rm -rf "+upload+" && ln -s "+shq(stage)+" "+upload, 20*time.Second); err != nil {
 		return "", err
 	}
+	defer mpcRun("rm -f "+upload, 10*time.Second)
 	for _, t := range todo {
 		j.say("  copying %s to the MPC…", t.folder)
-		if err := mpcPut(t.local, stage+"/"+t.id); err != nil {
+		if err := mpcPut(t.local, upload+"/"+t.id); err != nil {
 			return "", err
 		}
 	}
