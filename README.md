@@ -9,6 +9,7 @@
 - 🗂️ **PC Folders**: your PC's folders appear *inside the MPC's own browser*, with no copying (MPC Link built in).
 - ⏺️ **Save last 60 s**: jamming and something good just happened? One click saves the last minute of the MPC's output as a WAV.
 - 🎛️ **Plugins**: the PotentialSuite plugins on your MPC (Potential1200, Bleed, Breaks, Crates, Grit, Heat, Kits, Noise, Patina, Punch, Warp and Wax). See which version each is on, **update them all** in one tap, **restart the MPC app**, **test** them (CPU bench and load test) and **record** the result on GitHub, make a **new version**, and set the **folders** PotentialBreaks and PotentialWax look in.
+- 🎨 **Hi-Fi look** *(new in 1.7.0)*: brushed charcoal in walnut cheeks, cream and amber moulded keys and green glass displays, to match the PotentialSuite plugins' Hi-Fi look. The **LOOK** key at the top switches between **Hi-Fi** and **Classic** (the original dark look) in one tap, and the app remembers it.
 - 🥁 **Drum one-shots**: one tap looks through every sample on the MPC (USB, SD card and its own storage) and copies the drum and percussion one-shots to **DRUM ONE SHOTS** on the SD card, sorted into Kicks, Snares, Claps, Hats, Cymbals, Toms and Percs. Basses, chords, melodic sounds and loops are left out. It runs on the MPC itself; tap again later and only new samples are checked.
 
 One click to open, nothing to type. Made by **PotentialBreaks** for my own setup, and shared free.

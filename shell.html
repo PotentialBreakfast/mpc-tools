@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <title>MPC TOOLS</title>
 <link rel="icon" type="image/png" href="/icon.png">
+<script>/* the look (Classic or Hi-Fi), before anything is drawn; the shell's LOOK key changes it */
+try { if ((localStorage.getItem('mpctools-look') || 'hifi') === 'hifi') document.documentElement.dataset.look = 'hifi'; }
+catch (e) { document.documentElement.dataset.look = 'hifi'; }
+</script>
 <style>
   :root { --bg:#141518; --bar:#1b1c20; --panel:#1e2024; --line:#2c2f35; --text:#e6e6e6; --dim:#8a8f98;
           --red:#ff4a3d; --amber:#ffa62b; --green:#3fb950; }
@@ -91,6 +95,52 @@
   .small { font-size:13px; color:var(--dim); margin-top:14px; }
   .obsurl { font:600 18px ui-monospace, Consolas, monospace; background:#121316; padding:12px 14px; border-radius:10px;
             border:1px solid var(--line); user-select:all; }
+  /* ---- Hi-Fi look (the PotentialSuite's Hi-Fi): brushed charcoal in walnut, moulded keys, glass displays ---- */
+  html[data-look="hifi"] { --bg:#17181b; --panel:#24252b; --line:#3a3934; --text:#ece6d6; --dim:#b3ad9e;
+    --hf-cream:linear-gradient(180deg,#f1ece0 0%,#e6e0d1 7%,#d6cfbf 55%,#b9b2a2 100%);
+    --hf-amber:linear-gradient(180deg,#ffe2a6 0%,#f7d18b 7%,#efc271 55%,#d29f4c 100%);
+    --hf-dark:linear-gradient(180deg,#4a4b52 0%,#36373d 8%,#2a2b30 60%,#1c1d21 100%);
+    --hf-key:inset 0 1px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(0,0,0,.16), 0 1px 0 #0e0f12, 0 4px 6px rgba(0,0,0,.7);
+    --hf-dkey:inset 0 1px 0 rgba(255,255,255,.14), inset 0 -2px 0 rgba(0,0,0,.3), 0 1px 0 #0b0c0e, 0 4px 6px rgba(0,0,0,.7);
+    --hf-down:inset 0 2px 5px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.7);
+    --hf-glass:radial-gradient(ellipse at 50% 42%,#14281b 0%,#0b160f 68%,#060b08 100%);
+    --hf-scan:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
+    --hf-raised:linear-gradient(180deg,#27282e 0%,#1c1d22 100%);
+    --hf-wood:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,220,170,.10) 35%,transparent 55%,rgba(0,0,0,.5)),
+              repeating-linear-gradient(90.5deg,#6d4527 0 2px,#7a4f2d 2px 3px,#5c3a20 3px 5px,#704829 5px 7px,#4f321c 7px 8px);
+    --hf-plate:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 2px,rgba(0,0,0,.05) 2px 3px),
+               radial-gradient(ellipse 90% 40% at 50% 0%,rgba(255,255,255,.05),transparent 70%),
+               linear-gradient(180deg,#1e1f24 0%,#121317 100%);
+    color-scheme:dark; }
+  html[data-look="hifi"] body { background:var(--hf-plate); }
+  html[data-look="hifi"] body { background:var(--hf-wood) left top/16px 100% no-repeat, var(--hf-wood) right top/16px 100% no-repeat, var(--hf-plate);
+    padding:0 16px; }
+  html[data-look="hifi"] header { background:linear-gradient(180deg,#26272d,#1a1b20); border-bottom:2px solid #0b0c0e;
+    box-shadow:inset 0 -1px 0 rgba(255,255,255,.05), 0 3px 8px rgba(0,0,0,.6); }
+  html[data-look="hifi"] .brand { font-family:Georgia, "Times New Roman", serif; letter-spacing:.06em; font-size:15px; white-space:nowrap; color:#f4efe0;
+    text-shadow:0 2px 2px rgba(0,0,0,.6); }
+  html[data-look="hifi"] .tab { background:var(--hf-dark); color:#d8d2c2; border:1px solid #0e0f12; border-bottom:none; box-shadow:var(--hf-dkey); top:0; }
+  html[data-look="hifi"] .tab.active { background:linear-gradient(180deg,#34353c,#1e1f24); color:#f4efe0; border-color:#3d3c37;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12); }
+  html[data-look="hifi"] .tab .pad { box-shadow:0 0 0 1px rgba(0,0,0,.6), 0 0 10px currentColor; }
+  html[data-look="hifi"] .key { color:#8f8a7d; }
+  html[data-look="hifi"] .hbtn, html[data-look="hifi"] #skip { background:var(--hf-cream); color:#241d12; border:1px solid #0e0f12; box-shadow:var(--hf-key);
+    text-shadow:0 1px 0 rgba(255,255,255,.45); }
+  html[data-look="hifi"] .hbtn:active, html[data-look="hifi"] #skip:active { box-shadow:var(--hf-down); transform:translateY(2px); }
+  html[data-look="hifi"] #audiobtn.on { background:var(--hf-amber); box-shadow:var(--hf-key), 0 0 0 2px var(--green); }
+  html[data-look="hifi"] #audiobtn .lvl { background:#0b160f; box-shadow:inset 0 1px 3px rgba(0,0,0,.8); }
+  html[data-look="hifi"] #audiobtn .lvl i { background:#8cffb0; box-shadow:0 0 6px #8cffb0; }
+  html[data-look="hifi"] #skipmsg, html[data-look="hifi"] #audiomsg { color:#8cffb0; text-shadow:0 0 6px rgba(140,255,176,.4); font-family:ui-monospace, Consolas, monospace; }
+  html[data-look="hifi"] main { background:#0e0f12; box-shadow:inset 0 3px 8px rgba(0,0,0,.8); }
+  html[data-look="hifi"] .msg { background:var(--hf-plate); }
+  html[data-look="hifi"] .msg button, html[data-look="hifi"] .big, html[data-look="hifi"] .row button { background:var(--hf-cream); color:#241d12;
+    border:1px solid #0e0f12; box-shadow:var(--hf-key); text-shadow:0 1px 0 rgba(255,255,255,.45); }
+  html[data-look="hifi"] .msg button.go, html[data-look="hifi"] .big.primary { background:var(--hf-amber); }
+  html[data-look="hifi"] .msg button:active, html[data-look="hifi"] .big:active, html[data-look="hifi"] .row button:active { box-shadow:var(--hf-down); transform:translateY(2px); }
+  html[data-look="hifi"] .card { background:var(--hf-raised); border:1px solid #3d3c37; box-shadow:0 10px 30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06); }
+  html[data-look="hifi"] .msg pre, html[data-look="hifi"] .obsurl, html[data-look="hifi"] .row input { background:var(--hf-scan), var(--hf-glass); color:#8cffb0;
+    border:1px solid #2b3a30; box-shadow:inset 0 3px 8px rgba(0,0,0,.85); }
+  #lookbtn { white-space:nowrap; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -104,6 +154,7 @@
   <div id="audiomsg"></div>
   <button class="hbtn" id="audiobtn" title="Hear the MPC here (Link Audio from HAKAI's MPC LINK AUDIO). Ctrl+M"><span class="spk">🔈</span>Audio<span class="lvl"><i></i></span></button>
   <button class="hbtn" id="obsbtn" title="Show the MPC screen in OBS">OBS</button>
+  <button class="hbtn" id="lookbtn" title="Change the look: Classic or Hi-Fi">Hi-Fi</button>
   <button class="hbtn" id="setbtn" title="Change which MPC to connect to">⚙</button>
   <div id="skipmsg"></div>
   <button id="skip" title="Save the last 60 seconds of the MPC's main output as a WAV (Ctrl+S)"><span class="rec"></span>Save last 60 s</button>
@@ -129,6 +180,18 @@
 <script src="/linkaudio.js"></script>
 <script>
   var NAMES = { remote: 'MPC Remote', files: 'File Browser', link: 'PC Folders (MPC Link)' };
+
+  /* LOOK: Classic (the dark original) or Hi-Fi (walnut, moulded keys, glass), kept on this PC; the Remote and Plugins pages follow it */
+  function lookNow() { return document.documentElement.dataset.look === 'hifi' ? 'hifi' : 'classic'; }
+  function setLook(l) {
+    var docs = [document];
+    document.querySelectorAll('iframe').forEach(function (f) { try { if (f.contentDocument) docs.push(f.contentDocument); } catch (e) {} });
+    docs.forEach(function (d) { if (l === 'hifi') d.documentElement.dataset.look = 'hifi'; else delete d.documentElement.dataset.look; });
+    document.getElementById('lookbtn').textContent = l === 'hifi' ? 'Hi-Fi' : 'Classic';
+    try { localStorage.setItem('mpctools-look', l); } catch (e) {}
+  }
+  document.getElementById('lookbtn').addEventListener('click', function () { setLook(lookNow() === 'hifi' ? 'classic' : 'hifi'); });
+  setLook(lookNow());
   var loaded = { remote: false, files: false, link: false };
 
   function show(t) {
